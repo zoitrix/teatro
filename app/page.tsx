@@ -99,9 +99,8 @@ export default function ImproPage() {
 
     const prompt = `
     Actúa como un director de teatro de improvisación amateur y divertido. 
-    Genera un título creativo, loco e inspirador para una escena de improvisación.
-    Modalidad: ${modalidad}
-    Dificultad: ${dificultad}.
+    Genera un título creativo, loco e inspirador para una escena de improvisación en la que los actores tendrán que improvisar.
+    La dificultad del título que propongas tiene que ir en base a la dificultad seleccionada: ${dificultad}.
     Devuelve SOLO el título, sin comillas ni texto extra. Máximo 6 palabras.`;
 
     try {
