@@ -128,7 +128,7 @@ export default function ImproPage() {
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Describe el inicio de una historia a través del título que te den, reflejando la relación de los personajes, el estado anímico, el conflicto y el lugar. ¡Ánimo!';
+      return 'Describe el inicio de una historia a través del título que te den, reflejando la relación de los personajes, el estado anímico, el conflicto y el lugar';
     }
     return '¡A improvisar!';
   };
@@ -306,7 +306,7 @@ export default function ImproPage() {
           <div className="bloque-config">
 
             <div className="recuadro-explicativo">
-              <strong>💡Misión:</strong> {getExplicacion()}
+              <div className="titulo-mision">💡Misión💡</div>{getExplicacion()}
             </div>
             <br/>
             <div className="controles-group">
