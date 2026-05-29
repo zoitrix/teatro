@@ -195,7 +195,7 @@ export default function ImproPage() {
       });
 
       const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 1.15, 
         presence_penalty: 1.6,   
@@ -267,7 +267,7 @@ export default function ImproPage() {
       });
 
       const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
       });
 
