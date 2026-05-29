@@ -145,80 +145,79 @@ export default function ImproPage() {
     return '¡A improvisar!';
   };
 
-  const iniciarEjercicio = async (): Promise<void> => {
-    if (tiempoConfig <= 0) {
-      alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
-      return;
-    }
+const iniciarEjercicio = async (): Promise<void> => {
+  if (tiempoConfig <= 0) {
+    alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
+    return;
+  }
 
-    setLoading(true);
-    setTextoUsuario('');
-    setFeedback('');
+  setLoading(true);
+  setTextoUsuario('');
+  setFeedback('');
 
-    const sujetosLocos = [
-      "un calcetín desparejado", "un fontanero", "una tostadora", 
-      "un brócoli", "un inspector de nubes", "un billete de monopoly", 
-      "un fantasma", "un dentista", "una paloma mensajera"
-    ];
+  const randomSalt = Math.floor(Math.random() * 9999);
 
-    const accionesRaras = [
-      "busca venganza", "intenta pasar desapercibido", "se obsesionó con el orden", 
-      "descubrió el sentido de la vida", "está atrapado en un bucle", "odia su trabajo",
-      "habla demasiado", "olvidó cómo parpadear", "busca un cargador"
-    ];
+  // PROMPT OPTIMIZADO CON PLANTILLAS SINTÁCTICAS NATURALES
+  const prompt = `
+[ROL]
+Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de improvisación.
 
-    const contextosBizarros = [
-      "en el ascensor", "durante la cena", "en el peor momento", 
-      "en el supermercado", "en el confesionario", "en medio del examen"
-    ];
+[MISIÓN]
+Inventa una frase inicial o título único para que los actores arranquen su escena. 
+¡IMPORTANTE! La frase debe estar perfectamente construida en español, tener sentido completo y sonar como algo que diría una persona real en voz alta. Evita palabras sueltas sin conector.
+(ID: ${randomSalt})
 
-    const sujeto = sujetosLocos[Math.floor(Math.random() * sujetosLocos.length)];
-    const accion = accionesRaras[Math.floor(Math.random() * accionesRaras.length)];
-    const contexto = contextosBizarros[Math.floor(Math.random() * contextosBizarros.length)];
+[ESTRUCTURA DE SINTAXIS RECOMENDADA]
+Para que tenga sentido orgánico, inspírate en estructuras reales como:
+- Una queja o acusación: "Me has vuelto a..." / "Tu hermano siempre..."
+- Una sospecha incómoda: "Creo que el..." / "Sé lo que hiciste con..."
+- Una orden o advertencia: "No toques ese..." / "Saca eso de..."
+- Una confesión surrealista: "Nunca te dije que..." / "Me da miedo tu..."
 
-    // PROMPT RE-ESTRUCTURADO ANTI-EXPLICACIONES (Formato directo)
-    const prompt = `Eres un espectador real en un show de improvisación de comedia. Genera una frase o título muy natural, ingenioso y de calle (máximo 6 o 7 palabras).
-Combina vagamente estos elementos: El sujeto "${sujeto}", la acción "${accion}" en el lugar/contexto "${contexto}".
+[NIVEL DE EXIGENCIA: ${dificultad.toUpperCase()}]
+- FÁCIL: Comedia cotidiana, problemas domésticos o de pareja. (Ej: "No dejes la tostadora encendida" o "Te has gastado el dinero del alquiler").
+- MEDIA: Declaraciones incómodas, secretos destapados o sospechas absurdas. (Ej: "Creo que el gato nos está vigilando" o "Tu madre descubrió el sótano").
+- DIFÍCIL: Paradojas divertidas, giros existenciales o locuras poéticas con perfecto sentido. (Ej: "El tiempo se ha congelado en la oficina" o "Tus plantas están planeando algo").
 
-Dificultad requerida [${dificultad}]:
-- fácil: Comedia cotidiana/enredo. Ejemplo: "No dejes la tostadora encendida"
-- media: Declaración incómoda o sospecha. Ejemplo: "Creo que el fontanero me miente"
-- difícil: Paradoja abstracta o locura. Ejemplo: "El tiempo se congela en el ascensor"
-
-REGLA ABSOLUTA: No des explicaciones, ni introducciones, ni hables de tu proceso creativo. Devuelve ÚNICAMENTE las palabras del título final.
+[REGLAS DE FORMATO CRÍTICAS]
+1. Devuelve ÚNICAMENTE la frase del título. Sin introducciones, sin comillas, sin puntos y sin explicaciones.
+2. Extensión: Entre 4 y 7 palabras. Si necesitas más palabras para completar la frase y que tenga sentido, hazlo.
 
 Título final:`;
 
-    try {
-      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-      if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-      const groq = new OpenAI({ 
-        apiKey, 
-        baseURL: "https://api.groq.com/openai/v1", 
-        dangerouslyAllowBrowser: true 
-      });
+    const groq = new OpenAI({ 
+      apiKey, 
+      baseURL: "https://api.groq.com/openai/v1", 
+      dangerouslyAllowBrowser: true 
+    });
 
-      const response = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.85, // Bajamos la temperatura para que sea más obediente
-        presence_penalty: 0.5,
-        max_tokens: 20, // 👈 Capa física de seguridad: si intenta explicar algo, se corta de golpe
-      });
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }],
+      // 🛠️ CONFIGURACIÓN DE AUDIOVIRTUAL AJUSTADA:
+      temperature: 0.95,       // Bajamos de 1.2 a 0.95 para obligarle a respetar la gramática española.
+      presence_penalty: 1.2,   // Mantiene la originalidad pero sin forzar combinaciones imposibles.
+      frequency_penalty: 0.5,  // Evita que se encasille en las mismas palabras.
+      max_tokens: 20, 
+    });
 
-      const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
-      setTitulo(nuevoTitulo);
-      setTimeLeft(tiempoConfig); 
-      setPantalla('jugando');
+    const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
+    setTitulo(nuevoTitulo);
+    setTimeLeft(tiempoConfig); 
+    setPantalla('jugando');
 
-    } catch (error) {
-      console.error(error);
-      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    console.error(error);
+    alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const finalizarEscena = async (): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
