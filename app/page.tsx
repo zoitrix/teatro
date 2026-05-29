@@ -10,7 +10,6 @@ export default function ImproPage() {
   const [modalidad, setModalidad] = useState<string>('inicio de impro');
   const [dificultad, setDificultad] = useState<string>('facil');
   const [tiempoConfig, setTiempoConfig] = useState<number>(20); 
-  const [metodoEntrada, setMetodoEntrada] = useState<'texto' | 'audio'>('audio'); 
 
   // Estados del flujo de la improvisación
   const [pantalla, setPantalla] = useState<'config' | 'jugando' | 'feedback'>('config');
@@ -61,9 +60,9 @@ export default function ImproPage() {
     }
   }, []);
 
-  // 🚀 EFECTO PARA AUTOMATIZAR EL MICRÓFONO AL EMPEZAR
+  // 🚀 AUTOMATIZACIÓN DEL MICRÓFONO AL EMPEZAR A JUGAR
   useEffect(() => {
-    if (pantalla === 'jugando' && metodoEntrada === 'audio') {
+    if (pantalla === 'jugando') {
       const timerMicro = setTimeout(() => {
         if (recognitionRef.current && !escuchando) {
           try {
@@ -73,13 +72,13 @@ export default function ImproPage() {
             console.error("No se pudo auto-iniciar el micrófono:", e);
           }
         } else if (!recognitionRef.current) {
-          alert("Tu navegador no soporta el dictado por voz. ¡Prueba usando el teclado!");
+          alert("Tu navegador no soporta el dictado por voz. Asegúrate de dar permisos al micrófono.");
         }
       }, 300);
 
       return () => clearTimeout(timerMicro);
     }
-  }, [pantalla, metodoEntrada]);
+  }, [pantalla]);
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
@@ -120,7 +119,6 @@ export default function ImproPage() {
         messages: [{ role: 'user', content: prompt }],
       });
 
-      // 👇 CORREGIDO: Así es como OpenAI/Groq guardan el texto recibido
       const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
       setTitulo(nuevoTitulo);
       setTimeLeft(tiempoConfig); 
@@ -134,11 +132,9 @@ export default function ImproPage() {
     }
   };
 
+  // Permite pausar o reanudar manualmente si el usuario lo desea
   const alternarMicrofono = (): void => {
-    if (!recognitionRef.current) {
-      alert("Tu navegador no soporta el dictado por voz. ¡Prueba usando el teclado!");
-      return;
-    }
+    if (!recognitionRef.current) return;
 
     if (escuchando) {
       recognitionRef.current.stop();
@@ -172,9 +168,6 @@ export default function ImproPage() {
     setLoading(true);
     setPantalla('feedback');
 
-    console.log(textoUsuario);
-    console.log(titulo);
-
     const prompt = `
     Actúa como un profesor de teatro de improvisación.
     En el texto te han tenido que reflejar la relación de los personajes, el conflicto entre ellos y el lugar.
@@ -199,7 +192,6 @@ export default function ImproPage() {
         messages: [{ role: 'user', content: prompt }],
       });
 
-      // 👇 CORREGIDO: Extracción del texto adaptada a Groq/OpenAI
       const nuevoFeedback = response.choices[0]?.message?.content?.trim() || '¡Buena improvisación!';
       setFeedback(nuevoFeedback);
     } catch (error) {
@@ -266,7 +258,7 @@ export default function ImproPage() {
           </div>
         )}
 
-        {/* PANTALLA 2: JUGANDO */}
+        {/* PANTALLA 2: JUGANDO (100% POR VOZ) */}
         {pantalla === 'jugando' && (
           <div className="bloque-juego">
             <div className="cronometro">
@@ -277,14 +269,26 @@ export default function ImproPage() {
               <strong>💡 Tu Misión:</strong> {getExplicacion()}
             </div>
 
+            {/* Contenedor de transcripción fluida */}
             <div className="formulario-texto-wrapper">
-              <textarea
-                className={`caja-texto ${escuchando ? 'borde-grabando' : ''}`}
-                placeholder={metodoEntrada === 'audio' ? "¡Empieza a hablar o a escribir lo que se te ocurra! ✍️🎙️🎭" : ""}
-                value={textoUsuario}
-                onChange={(e) => setTextoUsuario(e.target.value)}
-                autoFocus
-              />
+              <div className={`recuadro-transcripcion ${escuchando ? 'onda-activa' : ''}`}>
+                {textoUsuario.trim() ? (
+                  <p className="texto-hablado">{textoUsuario}</p>
+                ) : (
+                  <p className="placeholder-voz">
+                    {escuchando ? "🎙️ El escenario te escucha... ¡Empieza a hablar ahora!" : "🔇 Micrófono en pausa."}
+                  </p>
+                )}
+              </div>
+
+              {/* Botón secundario para pausar/activar el micro manualmente */}
+              <button 
+                type="button" 
+                className={`btn-control-micro ${escuchando ? 'activo' : ''}`} 
+                onClick={alternarMicrofono}
+              >
+                {escuchando ? '⏸️ Pausar Micrófono' : '🎙️ Reanudar Micrófono'}
+              </button>
             </div>
 
             <button className="btn-teatro btn-enviar" onClick={finalizarEscena} disabled={loading}>
