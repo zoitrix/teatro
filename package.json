@@ -21,6 +21,10 @@
     "postcss": "^8.x.x",
     "react": "^19.x.x",
     "react-dom": "^19.x.x",
-    "tailwindcss": "^4.0.0"
+    "tailwindcss": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.0.0"
   }
 }
