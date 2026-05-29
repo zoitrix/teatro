@@ -128,7 +128,7 @@ export default function ImproPage() {
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Describe el inicio de una Impro a través del título dado donde se refleje la relación de los personajes, el conflicto y el lugar.';
+      return 'Describe el inicio de una Impro a través del título dado donde se refleje la relación de los personajes, el estado anímico, el conflicto y el lugar.';
     }
     return '¡A improvisar!';
   };
@@ -246,7 +246,7 @@ export default function ImproPage() {
     Tu misión: Dale un feedback ultra corto, fresco y motivador. 
     Ten en cuenta que SOLO ha tenido ${tiempoConfig} segundos, ¡así que valora el caos y la velocidad!
 
-    Analiza de golpe si se intuyen estos 3 pilares para poder empezar a actuar ya: ¿Quiénes son? (Relación), ¿Qué pasa? (Conflicto) y ¿Dónde están? (Lugar).
+    Analiza de golpe si se intuyen estos 4 pilares para poder empezar a actuar ya: ¿Quiénes son? (Relación), ¿Qué sienten? (Estado de ánimo), ¿Qué problema tienen? (Conflicto) y ¿Dónde están? (Lugar).
     - Si lo ha logrado, celébralo con locura.
     - Si le ha faltado algo, proponle un añadido loco y rápido en lugar de criticar (Ej: "¡Faltó el lugar! Pero imagino que están en la cola del súper").
 
