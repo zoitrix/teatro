@@ -126,7 +126,7 @@ export default function ImproPage() {
 
     } catch (error) {
       console.error(error);
-      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Gemini.');
+      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Gemini.' + process.env.NEXT_PUBLIC_GOOGLE_API_KEY);
     } finally {
       setLoading(false);
     }
