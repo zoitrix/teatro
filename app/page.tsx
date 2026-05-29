@@ -128,7 +128,7 @@ export default function ImproPage() {
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Describe el inicio de una Impro a través del título dado donde se refleje la relación de los personajes, el estado anímico, el conflicto y el lugar.';
+      return 'Describe el inicio de una historia a través del título que te den, reflejando la relación de los personajes, el estado anímico, el conflicto y el lugar. ¡Ánimo!';
     }
     return '¡A improvisar!';
   };
