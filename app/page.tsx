@@ -83,7 +83,7 @@ export default function ImproPage() {
 
       recognitionRef.current = recognition;
     }
-  }, [esMovil]); // Se reinicia la configuración si cambia el tipo de dispositivo
+  }, [esMovil]); 
 
   // 🚀 AUTOMATIZACIÓN PARA PC (Se activa solo al entrar en modo juego si no es móvil)
   useEffect(() => {
@@ -243,6 +243,7 @@ export default function ImproPage() {
     Dado el título de la improvisación: "${titulo}" y la descripción recibida:  "${textoUsuario.trim() || '[No le dio tiempo a hablar nada]'}", se pide que des un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
     El objetivo del ejercicio es que, en esas primeras descripciones se refleje la relación de los personajes, el conflicto entre ellos y el lugar. Esto es lo más importante y la clave. El feedback tiene que estar relacionado con estas premisas.
     Tienes que ser divertido, alocado y creativo en tus respuestas.
+    Ten en cuenta que la persona ha tenido tan solo ${tiempoConfig} segundos para hablar y crear el contexto.
     Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 3 o 4 frases.`;
 
     try {
@@ -278,7 +279,7 @@ export default function ImproPage() {
   return (
     <div className="teatro-container">
       <header className="teatro-header">
-        <h1>🎭 ¡Impro Match! 🎬</h1>
+        <h1>🎭 ¡Impro! 🎬</h1>
         <p className="subtitulo">Saca al actor amateur que llevas dentro entrenando tu velocidad de improvisación</p>
       </header>
 
@@ -339,31 +340,23 @@ export default function ImproPage() {
 
             <div className="formulario-texto-wrapper centralizado">
               
-              {/* 📱 VISTA MÓVIL: Botón Walkie-Talkie (No hay texto visible) */}
+              {/* 📱 VISTA MÓVIL: Botón táctil integrado */}
               {esMovil ? (
-                <>
-                  <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo' : ''}`}>
-                    <p className="texto-estado">
-                      {escuchando ? "🔴 ESCENARIO ABIERTO... ¡HABLA!" : "🎤 MANTÉN PULSADO PARA HABLAR"}
-                    </p>
-                  </div>
-
-                  <button 
-                    type="button" 
-                    className={`btn-walkie-talkie ${escuchando ? 'pulsado' : ''}`}
-                    onMouseDown={iniciarGrabacionMovil}
-                    onMouseUp={detenerGrabacionMovil}
-                    onTouchStart={iniciarGrabacionMovil}
-                    onTouchEnd={detenerGrabacionMovil}
-                  >
-                    {escuchando ? '🔊 Suelta para pausar' : '🎙️ Pulsar y Mantener'}
-                  </button>
-                </>
+                <button 
+                  type="button" 
+                  className={`btn-teatro btn-walkie-talkie-recto ${escuchando ? 'grabando-activo' : ''}`}
+                  onMouseDown={iniciarGrabacionMovil}
+                  onMouseUp={detenerGrabacionMovil}
+                  onTouchStart={iniciarGrabacionMovil}
+                  onTouchEnd={detenerGrabacionMovil}
+                >
+                  {escuchando ? '🔴 GRABANDO... SUELTA PARA PAUSAR' : '🎤 MANTÉN PULSADO PARA HABLAR'}
+                </button>
               ) : (
-                /* 💻 VISTA ORDENADOR: Manos libres automático (Tampoco hay caja de texto, solo estado) */
-                <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo' : ''}`}>
+                /* 💻 VISTA ESCRITORIO: Sin botones. El micro se abre solo y muestra una sutil alerta de estado */
+                <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo-pc' : ''}`}>
                   <p className="texto-estado">
-                    {escuchando ? "🎙️ El escenario te escucha de continuo... ¡Improvisa!" : "🔇 Configurando micrófono..."}
+                    {escuchando ? "🎙️ El escenario está abierto... ¡Habla directamente!" : "🔇 Configurando entorno de audio..."}
                   </p>
                 </div>
               )}

@@ -375,3 +375,32 @@ select {
   border-color: #e74c3c;
   color: #e74c3c;
 }
+
+/* Botón Walkie-Talkie integrado con el estilo del teatro */
+.btn-walkie-talkie-recto {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px 15px;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Cambios de color cuando el usuario mantiene la pulsación */
+.btn-walkie-talkie-recto.grabando-activo {
+  background: #ff4757 !important; /* Rojo escénico de grabación */
+  color: #ffffff !important;
+  border-color: #ba1c2a !important;
+  transform: scale(0.97);
+  box-shadow: 0 0 15px rgba(255, 71, 87, 0.4);
+  animation: pulso-grabar 1.5s infinite;
+}
+
+@keyframes pulso-grabar {
+  0% { opacity: 1; }
+  50% { opacity: 0.85; }
+  100% { opacity: 1; }
+}
