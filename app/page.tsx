@@ -5,8 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import './globals.css';
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "NO_KEY_AVAILABLE";
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+
 
 export default function ImproPage() {
   // Configuración de los controles
@@ -92,7 +91,7 @@ export default function ImproPage() {
   };
 
   const iniciarEjercicio = async (): Promise<void> => {
-    // Validación por si el usuario deja el tiempo vacío o en 0
+    // Validaciones
     if (tiempoConfig <= 0) {
       alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
       return;
@@ -109,6 +108,12 @@ export default function ImproPage() {
     Devuelve SOLO el título, sin comillas ni texto extra. Máximo 6 palabras.`;
 
     try {
+      // 👇 Inicializamos la IA aquí, justo cuando se necesita en vivo
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+      if (!apiKey) throw new Error("La API Key no está configurada en el sistema.");
+
+      const ai = new GoogleGenAI({ apiKey });
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -118,10 +123,10 @@ export default function ImproPage() {
       setTitulo(nuevoTitulo);
       setTimeLeft(tiempoConfig); 
       setPantalla('jugando');
-      
+
     } catch (error) {
       console.error(error);
-      alert('¡Fallo en las luces! Revisa tu conexión a internet o tu API Key de Gemini. ' + API_KEY);
+      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Gemini.');
     } finally {
       setLoading(false);
     }
@@ -156,12 +161,12 @@ export default function ImproPage() {
 
   const finalizarEscena = async (): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    
+
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       setEscuchando(false);
     }
-    
+
     setLoading(true);
     setPantalla('feedback');
 
@@ -173,11 +178,17 @@ export default function ImproPage() {
     Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 4 o 5 frases.`;
 
     try {
+      // 👇 Inicializamos la IA aquí también
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+      if (!apiKey) throw new Error("La API Key no está configurada en el sistema.");
+
+      const ai = new GoogleGenAI({ apiKey });
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
       });
-      
+
       const nuevoFeedback = response.text?.trim() || '¡Buena improvisación!';
       setFeedback(nuevoFeedback);
     } catch (error) {
