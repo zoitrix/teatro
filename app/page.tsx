@@ -247,7 +247,7 @@ Título final:`;
     1. Sé alocado, usa jerga teatral divertida y tono de comedia.
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
     3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones, sin comillas, ni textos de relleno.
-    4. Extensión máxima: 3 o 4 frases (40-60 palabras). ¡Al grano!`;
+    4. Extensión máxima: 3 o 4 frases (45 palabras). ¡Al grano!`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
