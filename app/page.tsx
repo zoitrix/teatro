@@ -248,7 +248,7 @@ Título final:`;
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
     3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones, sin comillas, ni textos de relleno.
     4. Extensión máxima: 3 o 4 frases (30 palabras). ¡Al grano!
-    5. Si la propuesta es [SIN_RESPUESTA], ten en cuenta que el alumno no ha entregado la tarea pedida. No menciones [SIN_RESPUESTA]. Échale la bronca y que vuelva a intentarlo.`;
+    5. Si la propuesta es [SIN_RESPUESTA], el alumno no ha entregado la tarea pedida, no ha cumplido con los objetivos. No menciones [SIN_RESPUESTA]. Échale la bronca y que vuelva a intentarlo pero no intentes buscar la forma de dar otro tipo de feedback.`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
