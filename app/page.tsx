@@ -2,10 +2,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { OpenAI } from 'openai';
 import './globals.css';
-
-
 
 export default function ImproPage() {
   // Configuración de los controles
@@ -109,15 +107,19 @@ export default function ImproPage() {
     Devuelve SOLO el título, sin comillas ni texto extra. Máximo 6 palabras.`;
 
     try {
-      // 👇 Inicializamos la IA aquí, justo cuando se necesita en vivo
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-      if (!apiKey) throw new Error("La API Key no está configurada en el sistema.");
+      const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY; // 👈 Cambiado a tu clave de Groq
+      if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-      const ai = new GoogleGenAI({ apiKey });
+      // Conectamos la librería de OpenAI con el servidor de Groq
+      const groq = new OpenAI({ 
+        apiKey, 
+        baseURL: "https://api.groq.com/openai/v1", // 👈 ¡ESTA LÍNEA ES CRUCIAL!
+        dangerouslyAllowBrowser: true 
+      });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
+      const response = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile', // 👈 El modelo estrella de Groq
+        messages: [{ role: 'user', content: prompt }],
       });
 
       const nuevoTitulo = response.text?.trim() || 'Título Misterioso';
@@ -179,16 +181,20 @@ export default function ImproPage() {
     Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 4 o 5 frases.`;
 
     try {
-      // 👇 Inicializamos la IA aquí también
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-      if (!apiKey) throw new Error("La API Key no está configurada en el sistema.");
+      const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
+    if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-      const ai = new GoogleGenAI({ apiKey });
+    // Volvemos a conectar con el servidor de Groq
+    const groq = new OpenAI({ 
+      apiKey, 
+      baseURL: "https://api.groq.com/openai/v1", // 👈 Apuntamos a Groq
+      dangerouslyAllowBrowser: true 
+    });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile', // 👈 Mismo modelo
+      messages: [{ role: 'user', content: prompt }],
+    });
 
       const nuevoFeedback = response.text?.trim() || '¡Buena improvisación!';
       setFeedback(nuevoFeedback);
