@@ -8,7 +8,7 @@ import './globals.css';
 export default function ImproPage() {
   // Configuración de los controles
   const [modalidad, setModalidad] = useState<string>('inicio de impro');
-  const [dificultad, setDificultad] = useState<string>('facil');
+  const [dificultad, setDificultad] = useState<string>('media');
   const [tiempoConfig, setTiempoConfig] = useState<number>(20); 
 
   // Estados del flujo de la improvisación
@@ -19,11 +19,23 @@ export default function ImproPage() {
   const [textoUsuario, setTextoUsuario] = useState<string>('');
   const [feedback, setFeedback] = useState<string>('');
   const [escuchando, setEscuchando] = useState<boolean>(false); 
+  
+  // Detectar si el dispositivo es móvil
+  const [esMovil, setEsMovil] = useState<boolean>(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); 
 
-  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ (Versión optimizada para Móviles)
+  // Detectar el tamaño de la pantalla al cargar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkMovil = () => setEsMovil(window.innerWidth <= 768);
+    checkMovil();
+    window.addEventListener('resize', checkMovil);
+    return () => window.removeEventListener('resize', checkMovil);
+  }, []);
+
+  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ ADAPTATIVO
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -32,45 +44,36 @@ export default function ImproPage() {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
-      recognition.interimResults = true; // Necesario para fluidez, pero manejado con cuidado
+      
+      // En móvil apagamos resultados provisionales (cero duplicados); en PC los activamos para fluidez visual
+      recognition.interimResults = !esMovil; 
       recognition.lang = 'es-ES';
 
       recognition.onresult = (event: any) => {
         let textoDefinitivoAcumulado = '';
-        let textoTemporalActual = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcripcion = event.results[i][0].transcript;
-          
           if (event.results[i].isFinal) {
-            // Si el fragmento es definitivo, lo guardamos de forma limpia
-            textoDefinitivoAcumulado += transcripcion + ' ';
-          } else {
-            // Si es provisional (el móvil aún está procesando), lo dejamos en bypass temporal
-            textoTemporalActual += transcripcion;
+            textoDefinitivoAcumulado += event.results[i][0].transcript + ' ';
           }
         }
 
-        // Si hay texto definitivo nuevo, lo añadimos evitando duplicados idénticos en ráfaga
         if (textoDefinitivoAcumulado) {
           setTextoUsuario((prev) => {
-            // Limpieza básica: si lo nuevo que llega ya está al final de lo que teníamos, no lo duplicamos
-            const prevTrimmed = prev.trim();
-            const nuevoTrimmed = textoDefinitivoAcumulado.trim();
+            const prevClean = prev.trim();
+            const nuevoClean = textoDefinitivoAcumulado.trim();
             
-            if (prevTrimmed.endsWith(nuevoTrimmed)) {
-              return prev; 
+            if (prevClean.endsWith(nuevoClean)) {
+              return prev;
             }
-            return prev + textoDefinitivoAcumulado;
+            return prev + (prev ? ' ' : '') + nuevoClean;
           });
         }
       };
 
       recognition.onerror = (event: any) => {
-        console.error("Error en el micrófono:", event.error);
-        // El error 'aborted' ocurre a veces de forma nativa en móviles al pausar, lo gestionamos silenciosamente
-        if (event.error !== 'aborted') {
-          setEscuchando(false);
+        if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          console.error("Error en el micrófono:", event.error);
         }
       };
 
@@ -80,27 +83,48 @@ export default function ImproPage() {
 
       recognitionRef.current = recognition;
     }
-  }, []);
+  }, [esMovil]); // Se reinicia la configuración si cambia el tipo de dispositivo
 
-  // 🚀 AUTOMATIZACIÓN DEL MICRÓFONO AL EMPEZAR A JUGAR
+  // 🚀 AUTOMATIZACIÓN PARA PC (Se activa solo al entrar en modo juego si no es móvil)
   useEffect(() => {
-    if (pantalla === 'jugando') {
+    if (pantalla === 'jugando' && !esMovil) {
       const timerMicro = setTimeout(() => {
         if (recognitionRef.current && !escuchando) {
           try {
             recognitionRef.current.start();
             setEscuchando(true);
           } catch (e) {
-            console.error("No se pudo auto-iniciar el micrófono:", e);
+            console.error("No se pudo auto-iniciar el micrófono en PC:", e);
           }
-        } else if (!recognitionRef.current) {
-          alert("Tu navegador no soporta el dictado por voz. Asegúrate de dar permisos al micrófono.");
         }
       }, 300);
 
       return () => clearTimeout(timerMicro);
     }
-  }, [pantalla]);
+  }, [pantalla, esMovil]);
+
+  // 🎛️ CONTROLES EXCLUSIVOS DE MÓVIL (Pulsar y mantener)
+  const iniciarGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!esMovil) return;
+    e.preventDefault(); 
+    if (recognitionRef.current && !escuchando) {
+      try {
+        recognitionRef.current.start();
+        setEscuchando(true);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const detenerGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!esMovil) return;
+    e.preventDefault();
+    if (recognitionRef.current && escuchando) {
+      recognitionRef.current.stop();
+      setEscuchando(false);
+    }
+  };
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
@@ -109,107 +133,85 @@ export default function ImproPage() {
     return '¡A improvisar!';
   };
 
-const iniciarEjercicio = async (): Promise<void> => {
-  if (tiempoConfig <= 0) {
-    alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
-    return;
-  }
+  const iniciarEjercicio = async (): Promise<void> => {
+    if (tiempoConfig <= 0) {
+      alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
+      return;
+    }
 
-  setLoading(true);
-  setTextoUsuario('');
-  setFeedback('');
+    setLoading(true);
+    setTextoUsuario('');
+    setFeedback('');
 
-  // 🎭 Sujetos u objetos con los que empatizar
-  const sujetosLocos = [
-    "un calcetín desparejado", "un fontanero", "una tostadora", 
-    "un brócoli", "un inspector de nubes", "un billete de monopoly", 
-    "un fantasma", "un dentista", "una paloma mensajera"
-  ];
+    const sujetosLocos = [
+      "un calcetín desparejado", "un fontanero", "una tostadora", 
+      "un brócoli", "un inspector de nubes", "un billete de monopoly", 
+      "un fantasma", "un dentista", "una paloma mensajera"
+    ];
 
-  // 🏃‍♂️ Acciones o problemas reales
-  const accionesRaras = [
-    "busca venganza", "intenta pasar desapercibido", "se obsesionó con el orden", 
-    "descubrió el sentido de la vida", "está atrapado en un bucle", "odia su trabajo",
-    "habla demasiado", "olvidó cómo parpadear", "busca un cargador"
-  ];
+    const accionesRaras = [
+      "busca venganza", "intenta pasar desapercibido", "se obsesionó con el orden", 
+      "descubrió el sentido de la vida", "está atrapado en un bucle", "odia su trabajo",
+      "habla demasiado", "olvidó cómo parpadear", "busca un cargador"
+    ];
 
-  // 📍 Contextos cotidianos o tensos
-  const contextosBizarros = [
-    "en el ascensor", "durante la cena", "en el peor momento", 
-    "en el supermercado", "en el confesionario", "en medio del examen"
-  ];
+    const contextosBizarros = [
+      "en el ascensor", "durante la cena", "en el peor momento", 
+      "en el supermercado", "en el confesionario", "en medio del examen"
+    ];
 
-  const sujeto = sujetosLocos[Math.floor(Math.random() * sujetosLocos.length)];
-  const accion = accionesRaras[Math.floor(Math.random() * accionesRaras.length)];
-  const contexto = contextosBizarros[Math.floor(Math.random() * contextosBizarros.length)];
-  
-  const letras = "XYZABC";
-  const hashAleatorio = letras[Math.floor(Math.random() * letras.length)] + Math.floor(Math.random() * 999);
+    const sujeto = sujetosLocos[Math.floor(Math.random() * sujetosLocos.length)];
+    const accion = accionesRaras[Math.floor(Math.random() * accionesRaras.length)];
+    const contexto = contextosBizarros[Math.floor(Math.random() * contextosBizarros.length)];
+    
+    const letras = "XYZABC";
+    const hashAleatorio = letras[Math.floor(Math.random() * letras.length)] + Math.floor(Math.random() * 999);
 
-  // 🔥 NUEVO ENFOQUE: Le pedimos estructuras de oraciones reales del día a día
-  const prompt = `
-  Eres un espectador real, ingenioso y con mucha calle en un show de improvisación. Tienes un humor natural, rápido y te encanta proponer títulos que suenen a frases ingeniosas que diría una persona real, no un robot de inteligencia artificial.
+    const prompt = `
+    Eres un espectador real, ingenioso y con mucha calle en un show de improvisación. Tienes un humor natural, rápido y te encanta proponer títulos que suenen a frases ingeniosas que diría una persona real, no un robot de inteligencia artificial.
+    Misión: Sugiere una frase corta (máximo 6 palabras) para que los actores actúen.
+    Para inspirarte de forma totalmente única en esta función, tu mente va a conectar vagamente estas tres ideas:
+    - Alguien o algo: ${sujeto}
+    - Lo que le pasa: ${accion}
+    - Dónde ocurre: ${contexto}
+    (Código de variación del sistema: ${hashAleatorio})
+    Construye el título para que tenga la estructura gramatical de una frase natural (como una confesión, una queja, un titular o una orden). Ajústate al nivel de exigencia [${dificultad}]:
+    - fácil: Una frase con un tono de comedia costumbrista o enredo cotidiano (ej: "No dejes la tostadora encendida").
+    - media: Una declaración incómoda, una sospecha o un dilema divertido (ej: "Creo que el fontanero me miente").
+    - difícil: Una frase profunda, una paradoja existencial o un pensamiento filosófico poético pero abstracto (ej: "El tiempo se congela en el ascensor").
+    REGLAS CRÍTICAS DE NATURALIDAD:
+    1. El título debe sonar como una frase fluida y orgánica que diría un ser humano en voz alta. 
+    2. Prohibido usar patrones trillados de IA como "El misterio de...", "Las crónicas de...", "El hombre que...".
+    3. Devuelve ÚNICAMENTE las palabras de la frase. Sin comillas, sin puntos finales, sin texto de relleno. Máximo 6 palabras.`;
 
-  Misión: Sugiere una frase corta (máximo 6 palabras) para que los actores actúen.
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+      if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-  Para inspirarte de forma totalmente única en esta función, tu mente va a conectar vagamente estas tres ideas:
-  - Alguien o algo: ${sujeto}
-  - Lo que le pasa: ${accion}
-  - Dónde ocurre: ${contexto}
-  (Código de variación del sistema: ${hashAleatorio})
+      const groq = new OpenAI({ 
+        apiKey, 
+        baseURL: "https://api.groq.com/openai/v1", 
+        dangerouslyAllowBrowser: true 
+      });
 
-  Construye el título para que tenga la estructura gramatical de una frase natural (como una confesión, una queja, un titular o una orden). Ajústate al nivel de exigencia [${dificultad}]:
-  - fácil: Una frase con un tono de comedia costumbrista o enredo cotidiano (ej: "No dejes la tostadora encendida").
-  - media: Una declaración incómoda, una sospecha o un dilema divertido (ej: "Creo que el fontanero me miente").
-  - difícil: Una frase profunda, una paradoja existencial o un pensamiento filosófico poético pero abstracto (ej: "El tiempo se congela en el ascensor").
+      const response = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 1.15, 
+        presence_penalty: 1.6,   
+        frequency_penalty: 1.4,  
+      });
 
-  REGLAS CRÍTICAS DE NATURALIDAD:
-  1. El título debe sonar como una frase fluida y orgánica que diría un ser humano en voz alta. 
-  2. Prohibido usar patrones trillados de IA como "El misterio de...", "Las crónicas de...", "El hombre que...".
-  3. Devuelve ÚNICAMENTE las palabras de la frase. Sin comillas, sin puntos finales, sin texto de relleno. Máximo 6 palabras.`;
+      const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
+      setTitulo(nuevoTitulo);
+      setTimeLeft(tiempoConfig); 
+      setPantalla('jugando');
 
-  try {
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
-
-    const groq = new OpenAI({ 
-      apiKey, 
-      baseURL: "https://api.groq.com/openai/v1", 
-      dangerouslyAllowBrowser: true 
-    });
-
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      // Reducimos sutilmente la temperatura de 1.25 a 1.15 para que sea creativo pero respete la gramática humana.
-      temperature: 1.15, 
-      presence_penalty: 1.6,   
-      frequency_penalty: 1.4,  
-    });
-
-    const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
-    setTitulo(nuevoTitulo);
-    setTimeLeft(tiempoConfig); 
-    setPantalla('jugando');
-
-  } catch (error) {
-    console.error(error);
-    alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Permite pausar o reanudar manualmente si el usuario lo desea
-  const alternarMicrofono = (): void => {
-    if (!recognitionRef.current) return;
-
-    if (escuchando) {
-      recognitionRef.current.stop();
-      setEscuchando(false);
-    } else {
-      recognitionRef.current.start();
-      setEscuchando(true);
+    } catch (error) {
+      console.error(error);
+      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -238,7 +240,7 @@ const iniciarEjercicio = async (): Promise<void> => {
 
     const prompt = `
     Actúa como un director de teatro de improvisación amateur y divertido.
-    Dado el título de la improvisación: "${titulo}" y la descripción recibida:  "${textoUsuario.trim() || '[No le dio tiempo a escribir nada]'}", se pide que des un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
+    Dado el título de la improvisación: "${titulo}" y la descripción recibida:  "${textoUsuario.trim() || '[No le dio tiempo a hablar nada]'}", se pide que des un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
     El objetivo del ejercicio es que, en esas primeras descripciones se refleje la relación de los personajes, el conflicto entre ellos y el lugar. Esto es lo más importante y la clave. El feedback tiene que estar relacionado con estas premisas.
     Tienes que ser divertido, alocado y creativo en tus respuestas.
     Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 3 o 4 frases.`;
@@ -324,7 +326,7 @@ const iniciarEjercicio = async (): Promise<void> => {
           </div>
         )}
 
-        {/* PANTALLA 2: JUGANDO (100% POR VOZ) */}
+        {/* PANTALLA 2: JUGANDO */}
         {pantalla === 'jugando' && (
           <div className="bloque-juego">
             <div className="cronometro">
@@ -335,26 +337,37 @@ const iniciarEjercicio = async (): Promise<void> => {
               <strong>💡 Tu Misión:</strong> {getExplicacion()}
             </div>
 
-            {/* Contenedor de transcripción fluida */}
-            <div className="formulario-texto-wrapper">
-              <div className={`recuadro-transcripcion ${escuchando ? 'onda-activa' : ''}`}>
-                {textoUsuario.trim() ? (
-                  <p className="texto-hablado">{textoUsuario}</p>
-                ) : (
-                  <p className="placeholder-voz">
-                    {escuchando ? "🎙️ El escenario te escucha... ¡Empieza a hablar ahora!" : "🔇 Micrófono en pausa."}
-                  </p>
-                )}
-              </div>
+            <div className="formulario-texto-wrapper centralizado">
+              
+              {/* 📱 VISTA MÓVIL: Botón Walkie-Talkie (No hay texto visible) */}
+              {esMovil ? (
+                <>
+                  <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo' : ''}`}>
+                    <p className="texto-estado">
+                      {escuchando ? "🔴 ESCENARIO ABIERTO... ¡HABLA!" : "🎤 MANTÉN PULSADO PARA HABLAR"}
+                    </p>
+                  </div>
 
-              {/* Botón secundario para pausar/activar el micro manualmente */}
-              <button 
-                type="button" 
-                className={`btn-control-micro ${escuchando ? 'activo' : ''}`} 
-                onClick={alternarMicrofono}
-              >
-                {escuchando ? '⏸️ Pausar Micrófono' : '🎙️ Reanudar Micrófono'}
-              </button>
+                  <button 
+                    type="button" 
+                    className={`btn-walkie-talkie ${escuchando ? 'pulsado' : ''}`}
+                    onMouseDown={iniciarGrabacionMovil}
+                    onMouseUp={detenerGrabacionMovil}
+                    onTouchStart={iniciarGrabacionMovil}
+                    onTouchEnd={detenerGrabacionMovil}
+                  >
+                    {escuchando ? '🔊 Suelta para pausar' : '🎙️ Pulsar y Mantener'}
+                  </button>
+                </>
+              ) : (
+                /* 💻 VISTA ORDENADOR: Manos libres automático (Tampoco hay caja de texto, solo estado) */
+                <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo' : ''}`}>
+                  <p className="texto-estado">
+                    {escuchando ? "🎙️ El escenario te escucha de continuo... ¡Improvisa!" : "🔇 Configurando micrófono..."}
+                  </p>
+                </div>
+              )}
+              
             </div>
 
             <button className="btn-teatro btn-enviar" onClick={finalizarEscena} disabled={loading}>
