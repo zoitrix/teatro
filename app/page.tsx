@@ -241,7 +241,7 @@ export default function ImproPage() {
     const prompt = `
     Actúa como un director de teatro de improvisación súper entusiasta, divertido y con mucha energía. 
     Tu alumno acaba de hacer un "Inicio de Impro" relámpago basado en el título "${titulo}". 
-    Su propuesta ha sido: "${textoUsuario.trim() || 'Sin propuesta'}".
+    Su propuesta ha sido: "${textoUsuario.trim()} || 'Sin propuesta'".
 
     Tu misión: Dale un feedback ultra corto, fresco y motivador. 
     Ten en cuenta que SOLO ha tenido ${tiempoConfig} segundos, ¡así que valora el caos y la velocidad!
