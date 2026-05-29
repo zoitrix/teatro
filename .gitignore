@@ -1,41 +1,17 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencias (se instalarán en Render, no se suben)
+node_modules/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Carpetas de compilación/producción
+.next/
+dist/
+build/
 
-# testing
-/coverage
+# Archivos de entorno locales (claves secretas, contraseñas)
+.env
+.env.local
+.env.development.local
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# Archivos del sistema operativo o editores
 .DS_Store
-*.pem
-
-# debug
+.vscode/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
