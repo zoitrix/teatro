@@ -241,7 +241,7 @@ export default function ImproPage() {
     const prompt = `
     Actúa como un director de teatro de improvisación súper entusiasta, divertido y con mucha energía. 
     Tu alumno acaba de hacer un "Inicio de Impro" relámpago basado en el título "${titulo}". 
-    Su propuesta ha sido: "${textoUsuario.trim() || '[Silencio dramático... ¡Se quedó en blanco!]'}"
+    Su propuesta ha sido: "${textoUsuario.trim()}"
 
     Tu misión: Dale un feedback ultra corto, fresco y motivador. 
     Ten en cuenta que SOLO ha tenido ${tiempoConfig} segundos, ¡así que valora el caos y la velocidad!
@@ -254,7 +254,8 @@ export default function ImproPage() {
     1. Sé alocado, usa jerga teatral divertida y tono de comedia.
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
     3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones ("Aquí tienes tu feedback..."), sin comillas, ni textos de relleno.
-    4. Extensión máxima: 2 frases cortas (máximo 45 palabras en total). ¡Al grano!`;
+    4. Extensión máxima: 3 o 4 frases. ¡Al grano!
+    5. Si no has recibido ninguna propuesta, ponte crítico y dale un feedback corto, cumpliendo con la extensión máxima del punto anterior. ¡El actor no ha cumplido con su tarea!`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -290,7 +291,7 @@ export default function ImproPage() {
     <div className="teatro-container">
       <header className="teatro-header">
         <h1>🎭 ¡Impro! 🎬</h1>
-        <p className="subtitulo">Saca al actor amateur que llevas dentro entrenando tu velocidad de improvisación</p>
+        <p className="subtitulo">¡Saca un título y construye el inicio de una historia en tiempo record!</p>
       </header>
 
       <main className="escenario">
@@ -304,13 +305,15 @@ export default function ImproPage() {
         {pantalla === 'config' && (
           <div className="bloque-config">
             <div className="controles-group">
+              {/*
               <label>Modalidad:
                 <select value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
                   <option value="inicio de impro">Inicio de Impro</option>
                 </select>
               </label>
+              */}
 
-              <label>Dificultad:
+              <label>Dificultad
                 <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
                   <option value="fácil">Fácil (Cotidiano)</option>
                   <option value="media">Media (Interesante)</option>
@@ -318,7 +321,7 @@ export default function ImproPage() {
                 </select>
               </label>
 
-              <label>Tiempo de escena:
+              <label>Tiempo (segundos)
                 <input 
                   type="number" 
                   className="input-tiempo-number"
