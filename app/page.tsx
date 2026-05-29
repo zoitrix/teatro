@@ -163,26 +163,19 @@ export default function ImproPage() {
     const sujeto = sujetosLocos[Math.floor(Math.random() * sujetosLocos.length)];
     const accion = accionesRaras[Math.floor(Math.random() * accionesRaras.length)];
     const contexto = contextosBizarros[Math.floor(Math.random() * contextosBizarros.length)];
-    
-    const letras = "XYZABC";
-    const hashAleatorio = letras[Math.floor(Math.random() * letras.length)] + Math.floor(Math.random() * 999);
 
-    const prompt = `
-    Eres un espectador real, ingenioso y con mucha calle en un show de improvisación. Tienes un humor natural, rápido y te encanta proponer títulos que suenen a frases ingeniosas que diría una persona real, no un robot de inteligencia artificial.
-    Misión: Sugiere una frase corta (máximo 6 palabras) para que los actores actúen.
-    Para inspirarte de forma totalmente única en esta función, tu mente va a conectar vagamente estas tres ideas:
-    - Alguien o algo: ${sujeto}
-    - Lo que le pasa: ${accion}
-    - Dónde ocurre: ${contexto}
-    (Código de variación del sistema: ${hashAleatorio})
-    Construye el título para que tenga la estructura gramatical de una frase natural (como una confesión, una queja, un titular o una orden). Ajústate al nivel de exigencia [${dificultad}]:
-    - fácil: Una frase con un tono de comedia costumbrista o enredo cotidiano (ej: "No dejes la tostadora encendida").
-    - media: Una declaración incómoda, una sospecha o un dilema divertido (ej: "Creo que el fontanero me miente").
-    - difícil: Una frase profunda, una paradoja existencial o un pensamiento filosófico poético pero abstracto (ej: "El tiempo se congela en el ascensor").
-    REGLAS CRÍTICAS DE NATURALIDAD:
-    1. El título debe sonar como una frase fluida y orgánica que diría un ser humano en voz alta. 
-    2. Prohibido usar patrones trillados de IA como "El misterio de...", "Las crónicas de...", "El hombre que...".
-    3. Devuelve ÚNICAMENTE las palabras de la frase. Sin comillas, sin puntos finales, sin texto de relleno. Máximo 6 palabras, pero si necesitas una palabra más para que la frase tenga sentido, adelante.`;
+    // PROMPT RE-ESTRUCTURADO ANTI-EXPLICACIONES (Formato directo)
+    const prompt = `Eres un espectador real en un show de improvisación de comedia. Genera una frase o título muy natural, ingenioso y de calle (máximo 6 o 7 palabras).
+Combina vagamente estos elementos: El sujeto "${sujeto}", la acción "${accion}" en el lugar/contexto "${contexto}".
+
+Dificultad requerida [${dificultad}]:
+- fácil: Comedia cotidiana/enredo. Ejemplo: "No dejes la tostadora encendida"
+- media: Declaración incómoda o sospecha. Ejemplo: "Creo que el fontanero me miente"
+- difícil: Paradoja abstracta o locura. Ejemplo: "El tiempo se congela en el ascensor"
+
+REGLA ABSOLUTA: No des explicaciones, ni introducciones, ni hables de tu proceso creativo. Devuelve ÚNICAMENTE las palabras del título final.
+
+Título final:`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -197,9 +190,9 @@ export default function ImproPage() {
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 1.15, 
-        presence_penalty: 1.6,   
-        frequency_penalty: 1.4,  
+        temperature: 0.85, // Bajamos la temperatura para que sea más obediente
+        presence_penalty: 0.5,
+        max_tokens: 20, // 👈 Capa física de seguridad: si intenta explicar algo, se corta de golpe
       });
 
       const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
@@ -214,18 +207,6 @@ export default function ImproPage() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (pantalla === 'jugando' && timeLeft > 0) {
-      timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-    } else if (timeLeft === 0 && pantalla === 'jugando') {
-      finalizarEscena();
-    }
-    
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [timeLeft, pantalla]);
 
   const finalizarEscena = async (): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -253,7 +234,7 @@ export default function ImproPage() {
     REGLAS DE FORMATO CRÍTICAS:
     1. Sé alocado, usa jerga teatral divertida y tono de comedia.
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
-    3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones ("Aquí tienes tu feedback..."), sin comillas, ni textos de relleno.
+    3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones, sin comillas, ni textos de relleno.
     4. Extensión máxima: 3 o 4 frases (40-60 palabras). ¡Al grano!`;
 
     try {
@@ -269,6 +250,7 @@ export default function ImproPage() {
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
+        max_tokens: 80, // 👈 Limita también el tamaño máximo del feedback para ahorrar tokens
       });
 
       const nuevoFeedback = response.choices[0]?.message?.content?.trim() || '¡Buena improvisación!';
@@ -309,14 +291,6 @@ export default function ImproPage() {
             </div>
             <br/>
             <div className="controles-group">
-              {/*
-              <label>Modalidad:
-                <select value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
-                  <option value="inicio de impro">Inicio de Impro</option>
-                </select>
-              </label>
-              */}
-
               <label>Dificultad
                 <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
                   <option value="fácil">Fácil (Cotidiano)</option>
