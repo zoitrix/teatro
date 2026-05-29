@@ -23,7 +23,7 @@ export default function ImproPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); 
 
-  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ
+  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ (Versión optimizada para Móviles)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -32,24 +32,46 @@ export default function ImproPage() {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
-      recognition.interimResults = true;
+      recognition.interimResults = true; // Necesario para fluidez, pero manejado con cuidado
       recognition.lang = 'es-ES';
 
       recognition.onresult = (event: any) => {
-        let textoFinal = '';
+        let textoDefinitivoAcumulado = '';
+        let textoTemporalActual = '';
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcripcion = event.results[i][0].transcript;
+          
           if (event.results[i].isFinal) {
-            textoFinal += event.results[i][0].transcript + ' ';
+            // Si el fragmento es definitivo, lo guardamos de forma limpia
+            textoDefinitivoAcumulado += transcripcion + ' ';
+          } else {
+            // Si es provisional (el móvil aún está procesando), lo dejamos en bypass temporal
+            textoTemporalActual += transcripcion;
           }
         }
-        if (textoFinal) {
-          setTextoUsuario((prev) => prev + textoFinal);
+
+        // Si hay texto definitivo nuevo, lo añadimos evitando duplicados idénticos en ráfaga
+        if (textoDefinitivoAcumulado) {
+          setTextoUsuario((prev) => {
+            // Limpieza básica: si lo nuevo que llega ya está al final de lo que teníamos, no lo duplicamos
+            const prevTrimmed = prev.trim();
+            const nuevoTrimmed = textoDefinitivoAcumulado.trim();
+            
+            if (prevTrimmed.endsWith(nuevoTrimmed)) {
+              return prev; 
+            }
+            return prev + textoDefinitivoAcumulado;
+          });
         }
       };
 
       recognition.onerror = (event: any) => {
         console.error("Error en el micrófono:", event.error);
-        setEscuchando(false);
+        // El error 'aborted' ocurre a veces de forma nativa en móviles al pausar, lo gestionamos silenciosamente
+        if (event.error !== 'aborted') {
+          setEscuchando(false);
+        }
       };
 
       recognition.onend = () => {
