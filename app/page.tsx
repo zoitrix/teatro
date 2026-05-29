@@ -101,7 +101,8 @@ export default function ImproPage() {
     setTextoUsuario('');
     setFeedback('');
 
-    const prompt = `Actúa como un director de teatro de improvisación amateur y divertido. 
+    const prompt = `
+    Actúa como un director de teatro de improvisación amateur y divertido. 
     Genera un título creativo, loco e inspirador para una escena de improvisación.
     Modalidad: ${modalidad}
     Dificultad: ${dificultad}.
@@ -126,7 +127,7 @@ export default function ImproPage() {
 
     } catch (error) {
       console.error(error);
-      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Gemini.' + process.env.NEXT_PUBLIC_GOOGLE_API_KEY);
+      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Gemini.');
     } finally {
       setLoading(false);
     }
