@@ -182,7 +182,7 @@ export default function ImproPage() {
     REGLAS CRÍTICAS DE NATURALIDAD:
     1. El título debe sonar como una frase fluida y orgánica que diría un ser humano en voz alta. 
     2. Prohibido usar patrones trillados de IA como "El misterio de...", "Las crónicas de...", "El hombre que...".
-    3. Devuelve ÚNICAMENTE las palabras de la frase. Sin comillas, sin puntos finales, sin texto de relleno. Máximo 6 palabras.`;
+    3. Devuelve ÚNICAMENTE las palabras de la frase. Sin comillas, sin puntos finales, sin texto de relleno. Máximo 6 palabras, pero si necesitas una palabra más para que la frase tenga sentido, adelante.`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -239,12 +239,22 @@ export default function ImproPage() {
     setPantalla('feedback');
 
     const prompt = `
-    Actúa como un director de teatro de improvisación amateur y divertido.
-    Dado el título de la improvisación: "${titulo}" y la descripción recibida:  "${textoUsuario.trim() || '[No le dio tiempo a hablar nada]'}", se pide que des un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
-    El objetivo del ejercicio es que, en esas primeras descripciones se refleje la relación de los personajes, el conflicto entre ellos y el lugar. Esto es lo más importante y la clave. El feedback tiene que estar relacionado con estas premisas.
-    Tienes que ser divertido, alocado y creativo en tus respuestas.
-    Ten en cuenta que la persona ha tenido tan solo ${tiempoConfig} segundos para hablar y crear el contexto.
-    Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 3 o 4 frases.`;
+    Actúa como un director de teatro de improvisación súper entusiasta, divertido y con mucha energía. 
+    Tu alumno acaba de hacer un "Inicio de Impro" relámpago basado en el título "${titulo}". 
+    Su propuesta ha sido: "${textoUsuario.trim() || '[Silencio dramático... ¡Se quedó en blanco!]'}"
+
+    Tu misión: Dale un feedback ultra corto, fresco y motivador. 
+    Ten en cuenta que SOLO ha tenido ${tiempoConfig} segundos, ¡así que valora el caos y la velocidad!
+
+    Analiza de golpe si se intuyen estos 3 pilares para poder empezar a actuar ya: ¿Quiénes son? (Relación), ¿Qué pasa? (Conflicto) y ¿Dónde están? (Lugar).
+    - Si lo ha logrado, celébralo con locura.
+    - Si le ha faltado algo, proponle un añadido loco y rápido en lugar de criticar (Ej: "¡Faltó el lugar! Pero imagino que están en la cola del súper").
+
+    REGLAS DE FORMATO CRÍTICAS:
+    1. Sé alocado, usa jerga teatral divertida y tono de comedia.
+    2. NUNCA uses un tono serio, académico, rígido o destructivo.
+    3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones ("Aquí tienes tu feedback..."), sin comillas, ni textos de relleno.
+    4. Extensión máxima: 2 frases cortas (máximo 45 palabras en total). ¡Al grano!`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
