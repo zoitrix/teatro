@@ -20,6 +20,9 @@ export default function ImproPage() {
   const [feedback, setFeedback] = useState<string>('');
   const [escuchando, setEscuchando] = useState<boolean>(false); 
   
+  // Histórico de títulos sugeridos durante la sesión:
+  const [titulos, setTitulos] = useState<string[]>([]);
+
   // Detectar si el dispositivo es móvil
   const [esMovil, setEsMovil] = useState<boolean>(false);
 
@@ -207,6 +210,8 @@ Título final:`;
 
     const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
     setTitulo(nuevoTitulo);
+    titulos.push(nuevoTitulo);
+    setTitulos(titulos);
     setTimeLeft(tiempoConfig); 
     setPantalla('jugando');
 
@@ -230,28 +235,32 @@ Título final:`;
     setLoading(true);
     setPantalla('feedback');
 
-    const prompt = `
-    [ROL]
-    Actúa como un director de teatro de improvisación súper entusiasta, divertido, con mucha energía y jerga teatral alocada.
+// Asegúrate de pasar la lista de títulos formateada como un texto limpio
+const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
 
-    [CONTEXTO DE ENTRADA]
-    - Título del ejercicio dado por el sistema: "${titulo}" (Ojo: Este título NO lo ha creado el alumno, no le felicites por él).
-    - Propuesta improvisada por el alumno en ${tiempoConfig} segundos: "${textoUsuario.trim() || '[SIN_RESPUESTA]'}"
+const prompt = `
+[ROL]
+Actúa como un director de teatro de improvisación súper entusiasta, divertido, con mucha energía y jerga teatral alocada.
 
-    [INSTRUCCIONES DE EVALUACIÓN (PASO A PASO)]
+[CONTEXTO DE ENTRADA]
+- Título del ejercicio actual dado por el sistema: "${titulo}" (Ojo: Este título NO lo ha creado el alumno, no le felicites por él).
+- Historial de títulos ya jugados en esta sesión: [${historialTitulos}] (Evita repetir chistes, ideas, escenarios o conceptos que encajen con estos títulos previos).
+- Propuesta improvisada por el alumno en ${tiempoConfig} segundos: "${textoUsuario.trim() || '[SIN_RESPUESTA]'}"
 
-    1. CASO CRÍTICO - SI LA PROPUESTA ES [SIN_RESPUESTA]:
-      El alumno se ha quedado mudo en el escenario y no ha dicho absolutamente nada. No intentes buscarle el lado positivo ni inventar un contexto. Échale una bronca divertida de director teatral, dile que se ha quedado congelado como una estatua y exígele con energía que vuelva a subir al escenario a intentarlo. Fin.
+[INSTRUCCIONES DE EVALUACIÓN (PASO A PASO)]
 
-    2. CASO GENERAL - SI EL ALMUNO SÍ HA RESPUESTO:
-      Analiza EXCLUSIVAMENTE su propuesta. Valora la velocidad y el caos. Revisa de golpe si se intuyen estos 4 pilares: ¿Quiénes son? (Relación), ¿Qué sienten? (Ánimo), ¿Cuál es el problema? (Conflicto) y ¿Dónde están? (Lugar).
-      - Si están los pilares: ¡Celébralo con locura!
-      - Si falta alguno: No critiques, propón tú un añadido loco e improvisado sobre la marcha para completar la escena.
+1. CASO CRÍTICO - SI LA PROPUESTA ES [SIN_RESPUESTA]:
+   El alumno se ha quedado mudo en el escenario y no ha dicho absolutamente nada. No intentes buscarle el lado positivo ni inventar un contexto. Échale una bronca divertida de director teatral, dile que se ha quedado congelado como una estatua y exígele con energía que vuelva a subir al escenario a intentarlo. Fin.
 
-    [REGLAS DE FORMATO ABSOLUTAS]
-    - Devuelve ÚNICAMENTE el comentario directo del director en primera persona. 
-    - Prohibido incluir introducciones, saludos, despedidas, comillas o textos de relleno.
-    - Extensión máxima: 3 frases cortas (máximo 35 palabras en total). ¡Puro ritmo de comedia!`;
+2. CASO GENERAL - SI EL ALUMNO SÍ HA RESPUESTO:
+   Analiza EXCLUSIVAMENTE su propuesta. Valora la velocidad y el caos. Revisa de golpe si se intuyen estos 4 pilares: ¿Quiénes son? (Relación), ¿Qué sienten? (Ánimo), ¿Cuál es el problema? (Conflicto) y ¿Dónde están? (Lugar).
+   - Si están los pilares: ¡Celébralo con locura!
+   - Si falta alguno: No critiques. Propón tú un añadido loco e improvisado sobre la marcha para completar la escena, pero que sea una idea TOTALMENTE NUEVA y diferente a lo visto en el [Historial de títulos ya jugados].
+
+[REGLAS DE FORMATO ABSOLUTAS]
+- Devuelve ÚNICAMENTE el comentario directo del director en primera persona. 
+- Prohibido incluir introducciones, saludos, despedidas, comillas o textos de relleno.
+- Extensión máxima: 3 frases cortas (máximo 35 palabras en total). ¡Puro ritmo de comedia!`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
