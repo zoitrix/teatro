@@ -254,7 +254,7 @@ export default function ImproPage() {
     1. Sé alocado, usa jerga teatral divertida y tono de comedia.
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
     3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones ("Aquí tienes tu feedback..."), sin comillas, ni textos de relleno.
-    4. Extensión máxima: 3 o 4 frases. ¡Al grano!`;
+    4. Extensión máxima: 3 o 4 frases (40-60 palabras). ¡Al grano!`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -303,11 +303,12 @@ export default function ImproPage() {
         {/* PANTALLA 1: CONFIGURACIÓN */}
         {pantalla === 'config' && (
           <div className="bloque-config">
-            <div className="controles-group">
 
             <div className="recuadro-explicativo">
               <strong>💡Misión:</strong> {getExplicacion()}
             </div>
+            <br/>
+            <div className="controles-group">
               {/*
               <label>Modalidad:
                 <select value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
