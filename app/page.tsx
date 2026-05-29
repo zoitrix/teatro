@@ -128,7 +128,7 @@ export default function ImproPage() {
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Describe el inicio de una Improvisación a través del título dado donde se refleje la relación de personajes, el conflicto y el lugar.';
+      return 'Describe el inicio de una Impro a través del título dado donde se refleje la relación de los personajes, el conflicto y el lugar.';
     }
     return '¡A improvisar!';
   };
@@ -291,7 +291,7 @@ export default function ImproPage() {
     <div className="teatro-container">
       <header className="teatro-header">
         <h1>🎭 ¡Impro! 🎬</h1>
-        <p className="subtitulo">¡Saca un título y construye el inicio de una historia en tiempo record!</p>
+        <p className="subtitulo">¡Saca un título y construye tu historia!</p>
       </header>
 
       <main className="escenario">
@@ -305,6 +305,10 @@ export default function ImproPage() {
         {pantalla === 'config' && (
           <div className="bloque-config">
             <div className="controles-group">
+
+            <div className="recuadro-explicativo">
+              <strong>💡Misión:</strong> {getExplicacion()}
+            </div>
               {/*
               <label>Modalidad:
                 <select value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
@@ -345,10 +349,6 @@ export default function ImproPage() {
           <div className="bloque-juego">
             <div className="cronometro">
               ⏱️ {timeLeft}s
-            </div>
-
-            <div className="recuadro-explicativo">
-              <strong>💡 Tu Misión:</strong> {getExplicacion()}
             </div>
 
             <div className="formulario-texto-wrapper centralizado">
