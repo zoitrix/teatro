@@ -109,49 +109,96 @@ export default function ImproPage() {
     return '¡A improvisar!';
   };
 
-  const iniciarEjercicio = async (): Promise<void> => {
-    if (tiempoConfig <= 0) {
-      alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
-      return;
-    }
+const iniciarEjercicio = async (): Promise<void> => {
+  if (tiempoConfig <= 0) {
+    alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
+    return;
+  }
 
-    setLoading(true);
-    setTextoUsuario('');
-    setFeedback('');
+  setLoading(true);
+  setTextoUsuario('');
+  setFeedback('');
 
-    const prompt = `
-    Actúa como un director de teatro de improvisación amateur y divertido. 
-    Genera un título creativo, loco e inspirador para una escena de improvisación en la que los actores tendrán que improvisar.
-    La dificultad del título que propongas tiene que ir en base a la dificultad seleccionada: ${dificultad}.
-    Devuelve SOLO el título, sin comillas ni texto extra. Máximo 6 palabras.`;
+  // 🎭 Sujetos u objetos con los que empatizar
+  const sujetosLocos = [
+    "un calcetín desparejado", "un fontanero", "una tostadora", 
+    "un brócoli", "un inspector de nubes", "un billete de monopoly", 
+    "un fantasma", "un dentista", "una paloma mensajera"
+  ];
 
-    try {
-      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-      if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
+  // 🏃‍♂️ Acciones o problemas reales
+  const accionesRaras = [
+    "busca venganza", "intenta pasar desapercibido", "se obsesionó con el orden", 
+    "descubrió el sentido de la vida", "está atrapado en un bucle", "odia su trabajo",
+    "habla demasiado", "olvidó cómo parpadear", "busca un cargador"
+  ];
 
-      const groq = new OpenAI({ 
-        apiKey, 
-        baseURL: "https://api.groq.com/openai/v1", 
-        dangerouslyAllowBrowser: true 
-      });
+  // 📍 Contextos cotidianos o tensos
+  const contextosBizarros = [
+    "en el ascensor", "durante la cena", "en el peor momento", 
+    "en el supermercado", "en el confesionario", "en medio del examen"
+  ];
 
-      const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-      });
+  const sujeto = sujetosLocos[Math.floor(Math.random() * sujetosLocos.length)];
+  const accion = accionesRaras[Math.floor(Math.random() * accionesRaras.length)];
+  const contexto = contextosBizarros[Math.floor(Math.random() * contextosBizarros.length)];
+  
+  const letras = "XYZABC";
+  const hashAleatorio = letras[Math.floor(Math.random() * letras.length)] + Math.floor(Math.random() * 999);
 
-      const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
-      setTitulo(nuevoTitulo);
-      setTimeLeft(tiempoConfig); 
-      setPantalla('jugando');
+  // 🔥 NUEVO ENFOQUE: Le pedimos estructuras de oraciones reales del día a día
+  const prompt = `
+  Eres un espectador real, ingenioso y con mucha calle en un show de improvisación. Tienes un humor natural, rápido y te encanta proponer títulos que suenen a frases ingeniosas que diría una persona real, no un robot de inteligencia artificial.
 
-    } catch (error) {
-      console.error(error);
-      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  Misión: Sugiere una frase corta (máximo 6 palabras) para que los actores actúen.
+
+  Para inspirarte de forma totalmente única en esta función, tu mente va a conectar vagamente estas tres ideas:
+  - Alguien o algo: ${sujeto}
+  - Lo que le pasa: ${accion}
+  - Dónde ocurre: ${contexto}
+  (Código de variación del sistema: ${hashAleatorio})
+
+  Construye el título para que tenga la estructura gramatical de una frase natural (como una confesión, una queja, un titular o una orden). Ajústate al nivel de exigencia [${dificultad}]:
+  - fácil: Una frase con un tono de comedia costumbrista o enredo cotidiano (ej: "No dejes la tostadora encendida").
+  - media: Una declaración incómoda, una sospecha o un dilema divertido (ej: "Creo que el fontanero me miente").
+  - difícil: Una frase profunda, una paradoja existencial o un pensamiento filosófico poético pero abstracto (ej: "El tiempo se congela en el ascensor").
+
+  REGLAS CRÍTICAS DE NATURALIDAD:
+  1. El título debe sonar como una frase fluida y orgánica que diría un ser humano en voz alta. 
+  2. Prohibido usar patrones trillados de IA como "El misterio de...", "Las crónicas de...", "El hombre que...".
+  3. Devuelve ÚNICAMENTE las palabras de la frase. Sin comillas, sin puntos finales, sin texto de relleno. Máximo 6 palabras.`;
+
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
+
+    const groq = new OpenAI({ 
+      apiKey, 
+      baseURL: "https://api.groq.com/openai/v1", 
+      dangerouslyAllowBrowser: true 
+    });
+
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      // Reducimos sutilmente la temperatura de 1.25 a 1.15 para que sea creativo pero respete la gramática humana.
+      temperature: 1.15, 
+      presence_penalty: 1.6,   
+      frequency_penalty: 1.4,  
+    });
+
+    const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
+    setTitulo(nuevoTitulo);
+    setTimeLeft(tiempoConfig); 
+    setPantalla('jugando');
+
+  } catch (error) {
+    console.error(error);
+    alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Permite pausar o reanudar manualmente si el usuario lo desea
   const alternarMicrofono = (): void => {
@@ -190,13 +237,11 @@ export default function ImproPage() {
     setPantalla('feedback');
 
     const prompt = `
-    Actúa como un profesor de teatro de improvisación.
-    En el texto te han tenido que reflejar la relación de los personajes, el conflicto entre ellos y el lugar.
-    Dale un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
-    El nivel de exigencia/sobriedad dependerá de la dificultad "${dificultad}", siendo más o menos severo/sobrio en función del nivel (Fácil / Media / Difícil)
-    Título de la impro: "${titulo}"
-    Lo que escribió el usuario: "${textoUsuario.trim() || '[No le dio tiempo a escribir o hablar nada]'}"
-    Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 4 o 5 frases.`;
+    Actúa como un director de teatro de improvisación amateur y divertido.
+    Dado el título de la improvisación: "${titulo}" y la descripción recibida:  "${textoUsuario.trim() || '[No le dio tiempo a escribir nada]'}", se pide que des un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
+    El objetivo del ejercicio es que, en esas primeras descripciones se refleje la relación de los personajes, el conflicto entre ellos y el lugar. Esto es lo más importante y la clave. El feedback tiene que estar relacionado con estas premisas.
+    Tienes que ser divertido, alocado y creativo en tus respuestas.
+    Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 3 o 4 frases.`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
