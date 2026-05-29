@@ -8,7 +8,7 @@ import './globals.css';
 export default function ImproPage() {
   // Configuración de los controles
   const [modalidad, setModalidad] = useState<string>('inicio de impro');
-  const [dificultad, setDificultad] = useState<string>('media');
+  const [dificultad, setDificultad] = useState<string>('facil');
   const [tiempoConfig, setTiempoConfig] = useState<number>(20); 
   const [metodoEntrada, setMetodoEntrada] = useState<'texto' | 'audio'>('audio'); 
 
@@ -106,7 +106,7 @@ export default function ImproPage() {
     Devuelve SOLO el título, sin comillas ni texto extra. Máximo 6 palabras.`;
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
       if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
       const groq = new OpenAI({ 
@@ -172,15 +172,20 @@ export default function ImproPage() {
     setLoading(true);
     setPantalla('feedback');
 
+    console.log(textoUsuario);
+    console.log(titulo);
+
     const prompt = `
-    Actúa como un profesor de teatro de improvisación muy crítico. Recuerda que en el texto te han tenido que reflejar la relación de los personajes, el conflicto entre ellos y el lugar. Dale un feedback constructivo pero sobrio,
-    proponiendo posibles mejoras y soluciones. 
+    Actúa como un profesor de teatro de improvisación.
+    En el texto te han tenido que reflejar la relación de los personajes, el conflicto entre ellos y el lugar.
+    Dale un feedback constructivo, apuntando las cosas positivas pero proponiendo posibles mejoras y soluciones.
+    El nivel de exigencia/sobriedad dependerá de la dificultad "${dificultad}", siendo más o menos severo/sobrio en función del nivel (Fácil / Media / Difícil)
     Título de la impro: "${titulo}"
     Lo que escribió el usuario: "${textoUsuario.trim() || '[No le dio tiempo a escribir o hablar nada]'}"
     Devuelve SOLO el feedback, sin comillas ni texto extra. Máximo 4 o 5 frases.`;
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
       if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
       const groq = new OpenAI({ 
@@ -238,7 +243,7 @@ export default function ImproPage() {
                 <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
                   <option value="fácil">Fácil (Cotidiano)</option>
                   <option value="media">Media (Interesante)</option>
-                  <option value="difícil">Difficult (Locura)</option>
+                  <option value="difícil">Difícil (Locura)</option>
                 </select>
               </label>
 
