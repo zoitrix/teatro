@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import './globals.css';
 
-const API_KEY = process.env.GEMINI_API_KEY || "NO_KEY_AVAILABLE";
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "NO_KEY_AVAILABLE";
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export default function ImproPage() {
