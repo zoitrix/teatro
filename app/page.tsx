@@ -255,7 +255,7 @@ export default function ImproPage() {
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
     3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones ("Aquí tienes tu feedback..."), sin comillas, ni textos de relleno.
     4. Extensión máxima: 3 o 4 frases. ¡Al grano!
-    5. Si no has recibido ninguna propuesta, ponte crítico y dale un feedback corto, cumpliendo con la extensión máxima del punto anterior. ¡El actor no ha cumplido con su tarea!`;
+    5. Si no has recibido ninguna propuesta (la propuesta es vacía), ponte crítico y dale un feedback corto, cumpliendo con la extensión máxima del punto anterior. ¡El actor no ha cumplido con su tarea!`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
