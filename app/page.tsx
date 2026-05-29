@@ -103,6 +103,18 @@ export default function ImproPage() {
     }
   }, [pantalla, esMovil]);
 
+  useEffect(() => {
+    if (pantalla === 'jugando' && timeLeft > 0) {
+      timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    } else if (timeLeft === 0 && pantalla === 'jugando') {
+      finalizarEscena();
+    }
+    
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [timeLeft, pantalla]);
+
   // 🎛️ CONTROLES EXCLUSIVOS DE MÓVIL (Pulsar y mantener)
   const iniciarGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
     if (!esMovil) return;
