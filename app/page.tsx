@@ -20,7 +20,7 @@ export default function ImproPage() {
   const [feedback, setFeedback] = useState<string>('');
   const [escuchando, setEscuchando] = useState<boolean>(false); 
   
-  // Histórico de títulos sugeridos durante la sesión:
+  // Histórico de títulos sugeridos durante la sesión
   const [titulos, setTitulos] = useState<string[]>([]);
 
   // Detectar si el dispositivo es móvil
@@ -28,6 +28,9 @@ export default function ImproPage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); 
+  
+  // 🛡️ Almacén seguro para evitar que el estado asíncrono borre el texto anterior
+  const textoAcumuladoRef = useRef<string>('');
 
   // Detectar el tamaño de la pantalla al cargar
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function ImproPage() {
     return () => window.removeEventListener('resize', checkMovil);
   }, []);
 
-  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ ADAPTATIVO
+  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ ADAPTATIVO (MÓVIL Y PC BLINDADO)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -47,31 +50,24 @@ export default function ImproPage() {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
-      
-      // En móvil apagamos resultados provisionales (cero duplicados); en PC los activamos para fluidez visual
-      recognition.interimResults = !esMovil; 
+      // Dejamos interimResults siempre en true para capturar hasta el microsegundo final
+      recognition.interimResults = true; 
       recognition.lang = 'es-ES';
 
       recognition.onresult = (event: any) => {
-        let textoDefinitivoAcumulado = '';
+        let fraseActualProvisional = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            textoDefinitivoAcumulado += event.results[i][0].transcript + ' ';
-          }
+          fraseActualProvisional += event.results[i][0].transcript;
         }
 
-        if (textoDefinitivoAcumulado) {
-          setTextoUsuario((prev) => {
-            const prevClean = prev.trim();
-            const nuevoClean = textoDefinitivoAcumulado.trim();
-            
-            if (prevClean.endsWith(nuevoClean)) {
-              return prev;
-            }
-            return prev + (prev ? ' ' : '') + nuevoClean;
-          });
-        }
+        // Concatenamos lo que ya teníamos guardado históricamente con lo que está entrando ahora
+        const textoCompleto = (textoAcumuladoRef.current + ' ' + fraseActualProvisional).trim();
+        
+        // Limpiamos espacios dobles extraños que ensucian el diseño
+        const textoLimpio = textoCompleto.replace(/\s+/g, ' ');
+        
+        setTextoUsuario(textoLimpio);
       };
 
       recognition.onerror = (event: any) => {
@@ -86,7 +82,7 @@ export default function ImproPage() {
 
       recognitionRef.current = recognition;
     }
-  }, [esMovil]); 
+  }, []); 
 
   // 🚀 AUTOMATIZACIÓN PARA PC (Se activa solo al entrar en modo juego si no es móvil)
   useEffect(() => {
@@ -106,11 +102,27 @@ export default function ImproPage() {
     }
   }, [pantalla, esMovil]);
 
+  // ⏱️ TEMPORIZADOR MODIFICADO: Captura el audio asíncronamente en el segundo 0
   useEffect(() => {
     if (pantalla === 'jugando' && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
     } else if (timeLeft === 0 && pantalla === 'jugando') {
-      finalizarEscena();
+      // Forzar apagado del micrófono inmediatamente para que vuelque los buffers de audio residuales
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.error(e);
+        }
+        setEscuchando(false);
+      }
+
+      // Pequeño margen estratégico (500ms) para que el estado de React se entere de las últimas palabras
+      const retrasoVaciado = setTimeout(() => {
+        finalizarEscena();
+      }, 500);
+
+      return () => clearTimeout(retrasoVaciado);
     }
     
     return () => {
@@ -118,10 +130,11 @@ export default function ImproPage() {
     };
   }, [timeLeft, pantalla]);
 
-  // 🎛️ CONTROLES EXCLUSIVOS DE MÓVIL (Pulsar y mantener)
+  // 🎛️ CONTROLES EXCLUSIVOS DE MÓVIL (Pulsar y mantener blindado)
   const iniciarGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
     if (!esMovil) return;
     e.preventDefault(); 
+    
     if (recognitionRef.current && !escuchando) {
       try {
         recognitionRef.current.start();
@@ -135,7 +148,12 @@ export default function ImproPage() {
   const detenerGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
     if (!esMovil) return;
     e.preventDefault();
+    
     if (recognitionRef.current && escuchando) {
+      // Antes de apagar el micro, congelamos de manera segura lo que el usuario ha dicho
+      // para que la siguiente pulsación sume en lugar de sobreescribir.
+      textoAcumuladoRef.current = textoUsuario.trim();
+      
       recognitionRef.current.stop();
       setEscuchando(false);
     }
@@ -148,20 +166,20 @@ export default function ImproPage() {
     return '¡A improvisar!';
   };
 
-const iniciarEjercicio = async (): Promise<void> => {
-  if (tiempoConfig <= 0) {
-    alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
-    return;
-  }
+  const iniciarEjercicio = async (): Promise<void> => {
+    if (tiempoConfig <= 0) {
+      alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
+      return;
+    }
 
-  setLoading(true);
-  setTextoUsuario('');
-  setFeedback('');
+    setLoading(true);
+    setTextoUsuario('');
+    textoAcumuladoRef.current = ''; // Reseteamos el acumulador histórico para la nueva escena
+    setFeedback('');
 
-  const randomSalt = Math.floor(Math.random() * 9999);
+    const randomSalt = Math.floor(Math.random() * 9999);
 
-  // PROMPT OPTIMIZADO CON PLANTILLAS SINTÁCTICAS NATURALES
-  const prompt = `
+    const prompt = `
 [ROL]
 Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de improvisación.
 
@@ -188,68 +206,78 @@ Para que tenga sentido orgánico, inspírate en estructuras reales como:
 
 Título final:`;
 
-  try {
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+      if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-    const groq = new OpenAI({ 
-      apiKey, 
-      baseURL: "https://api.groq.com/openai/v1", 
-      dangerouslyAllowBrowser: true 
-    });
+      const groq = new OpenAI({ 
+        apiKey, 
+        baseURL: "https://api.groq.com/openai/v1", 
+        dangerouslyAllowBrowser: true 
+      });
 
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'user', content: prompt }],
-      // 🛠️ CONFIGURACIÓN DE AUDIOVIRTUAL AJUSTADA:
-      temperature: 0.95,       // Bajamos de 1.2 a 0.95 para obligarle a respetar la gramática española.
-      presence_penalty: 1.2,   // Mantiene la originalidad pero sin forzar combinaciones imposibles.
-      frequency_penalty: 0.5,  // Evita que se encasille en las mismas palabras.
-      max_tokens: 20, 
-    });
+      const response = await groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.95,
+        presence_penalty: 1.2,
+        frequency_penalty: 0.5,
+        max_tokens: 20, 
+      });
 
-    const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
-    setTitulo(nuevoTitulo);
-    titulos.push(nuevoTitulo);
-    setTitulos(titulos);
-    setTimeLeft(tiempoConfig); 
-    setPantalla('jugando');
+      const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
+      setTitulo(nuevoTitulo);
+      
+      setTitulos((prev) => [...prev, nuevoTitulo]);
 
-  } catch (error) {
-    console.error(error);
-    alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
-  } finally {
-    setLoading(false);
-  }
-};
+      setTimeLeft(tiempoConfig); 
+      setPantalla('jugando');
 
+    } catch (error) {
+      console.error(error);
+      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const finalizarEscena = async (): Promise<void> => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
       setEscuchando(false);
     }
 
     setLoading(true);
     setPantalla('feedback');
 
-// Asegúrate de pasar la lista de títulos formateada como un texto limpio
-const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
+    // Comprobación de texto limpia y directa usando el estado reactivo unificado
+    let textoFinalSeguro = textoUsuario.trim();
+    if (!textoFinalSeguro) {
+      const contenedor = document.querySelector('.texto-guardado-usuario');
+      if (contenedor && contenedor.textContent) {
+        textoFinalSeguro = contenedor.textContent.replace(/[\[\]"']/g, "").trim();
+      }
+    }
 
-const prompt = `
+    const propuestaFinal = textoFinalSeguro && textoFinalSeguro !== "" ? textoFinalSeguro : '[SIN_RESPUESTA]';
+    const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
+
+    const prompt = `
 [ROL]
 Actúa como un director de teatro de improvisación súper entusiasta, divertido, con mucha energía y jerga teatral alocada.
 
 [CONTEXTO DE ENTRADA]
 - Título del ejercicio actual dado por el sistema: "${titulo}" (Ojo: Este título NO lo ha creado el alumno, no le felicites por él).
 - Historial de títulos ya jugados en esta sesión: [${historialTitulos}] (Evita repetir chistes, ideas, escenarios o conceptos que encajen con estos títulos previos).
-- Propuesta improvisada por el alumno en ${tiempoConfig} segundos: "${textoUsuario.trim() || '[SIN_RESPUESTA]'}"
+- Propuesta improvisada por el alumno en ${tiempoConfig} segundos: "${propuestaFinal}"
 
 [INSTRUCCIONES DE EVALUACIÓN (PASO A PASO)]
 
-1. CASO CRÍTICO - SI LA PROPUESTA ES [SIN_RESPUESTA]:
+1. CASO CRÍTICO - SI LA PROPUESTA ES "[SIN_RESPUESTA]":
    El alumno se ha quedado mudo en el escenario y no ha dicho absolutamente nada. No intentes buscarle el lado positivo ni inventar un contexto. Échale una bronca divertida de director teatral, dile que se ha quedado congelado como una estatua y exígele con energía que vuelva a subir al escenario a intentarlo. Fin.
 
 2. CASO GENERAL - SI EL ALUMNO SÍ HA RESPUESTO:
@@ -261,6 +289,8 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
 - Devuelve ÚNICAMENTE el comentario directo del director en primera persona. 
 - Prohibido incluir introducciones, saludos, despedidas, comillas o textos de relleno.
 - Extensión máxima: 3 frases cortas (máximo 35 palabras en total). ¡Puro ritmo de comedia!`;
+
+console.log(prompt);
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -275,14 +305,14 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 80, // 👈 Limita también el tamaño máximo del feedback para ahorrar tokens
+        max_tokens: 80,
       });
 
       const nuevoFeedback = response.choices[0]?.message?.content?.trim() || '¡Buena improvisación!';
       setFeedback(nuevoFeedback);
     } catch (error) {
       console.error(error);
-      setFeedback('El director se ha despistado tras el escenario... (Fallo al obtener feedback)');
+      setFeedback('El director se ha despistado tras el escenario...');
     } finally {
       setLoading(false);
     }
@@ -310,7 +340,6 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
         {/* PANTALLA 1: CONFIGURACIÓN */}
         {pantalla === 'config' && (
           <div className="bloque-config">
-
             <div className="recuadro-explicativo">
               <div className="titulo-mision">💡Misión💡</div>{getExplicacion()}
             </div>
@@ -351,7 +380,6 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
             </div>
 
             <div className="formulario-texto-wrapper centralizado">
-              
               {/* 📱 VISTA MÓVIL: Botón táctil integrado */}
               {esMovil ? (
                 <button 
@@ -362,18 +390,21 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
                   onTouchStart={iniciarGrabacionMovil}
                   onTouchEnd={detenerGrabacionMovil}
                 >
-                  {escuchando ? '🔴 GRABANDO... SUELTA PARA PAUSAR' : '🎤 MANTÉN PULSADO PARA HABLAR'}
+                  {escuchando ? '🔴 ESCUCHANDO... SUELTA PARA PAUSAR' : '🎤 MANTÉN PULSADO PARA HABLAR'}
                 </button>
               ) : (
-                /* 💻 VISTA ESCRITORIO: Sin botones. El micro se abre solo y muestra una sutil alerta de estado */
+                /* 💻 VISTA ESCRITORIO: Autostart activo */
                 <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo-pc' : ''}`}>
                   <p className="texto-estado">
                     {escuchando ? "🎙️ El escenario está abierto... ¡Habla directamente!" : "🔇 Configurando entorno de audio..."}
                   </p>
                 </div>
               )}
-              
             </div>
+
+            {/*<div className="previsualizacion-texto-temporal">
+              {textoUsuario && <p className="fade-in-texto">✍️ {textoUsuario}</p>}
+            </div>*/}
 
             <button className="btn-teatro btn-enviar" onClick={finalizarEscena} disabled={loading}>
               ¡Terminar Escena! 🔔
