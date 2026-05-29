@@ -15,10 +15,12 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "typescript": "^5.0.0",
-    "@google/genai": "latest"
+    "@google/genai": "latest",
+    "@tailwindcss/postcss": "^4.0.0", 
+    "next": "15.x.x",
+    "postcss": "^8.x.x",
+    "react": "^19.x.x",
+    "react-dom": "^19.x.x",
+    "tailwindcss": "^4.0.0"
   }
 }
