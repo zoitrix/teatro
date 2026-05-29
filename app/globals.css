@@ -234,6 +234,13 @@ select {
   letter-spacing: 0.5px;
 }
 
+.recuadro-feedback h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .texto-guardado-usuario {
   margin: 0;
   font-size: 1.1rem;
