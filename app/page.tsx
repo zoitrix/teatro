@@ -9,7 +9,7 @@ export default function ImproPage() {
   // Configuración de los controles
   const [modalidad, setModalidad] = useState<string>('inicio de impro');
   const [dificultad, setDificultad] = useState<string>('media');
-  const [tiempoConfig, setTiempoConfig] = useState<number>(20); // Estado numérico
+  const [tiempoConfig, setTiempoConfig] = useState<number>(20); 
   const [metodoEntrada, setMetodoEntrada] = useState<'texto' | 'audio'>('audio'); 
 
   // Estados del flujo de la improvisación
@@ -89,7 +89,6 @@ export default function ImproPage() {
   };
 
   const iniciarEjercicio = async (): Promise<void> => {
-    // Validaciones
     if (tiempoConfig <= 0) {
       alert("Por favor, introduce un tiempo de escena válido (mayor a 0 segundos).");
       return;
@@ -107,29 +106,29 @@ export default function ImproPage() {
     Devuelve SOLO el título, sin comillas ni texto extra. Máximo 6 palabras.`;
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY; // 👈 Cambiado a tu clave de Groq
+      const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
       if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-      // Conectamos la librería de OpenAI con el servidor de Groq
       const groq = new OpenAI({ 
         apiKey, 
-        baseURL: "https://api.groq.com/openai/v1", // 👈 ¡ESTA LÍNEA ES CRUCIAL!
+        baseURL: "https://api.groq.com/openai/v1", 
         dangerouslyAllowBrowser: true 
       });
 
       const response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile', // 👈 El modelo estrella de Groq
+        model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
       });
 
-      const nuevoTitulo = response.text?.trim() || 'Título Misterioso';
+      // 👇 CORREGIDO: Así es como OpenAI/Groq guardan el texto recibido
+      const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
       setTitulo(nuevoTitulo);
       setTimeLeft(tiempoConfig); 
       setPantalla('jugando');
 
     } catch (error) {
       console.error(error);
-      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Gemini.');
+      alert('¡Fallo en las luces! Revisa tu configuración o tu API Key de Groq.');
     } finally {
       setLoading(false);
     }
@@ -182,21 +181,21 @@ export default function ImproPage() {
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-    if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
+      if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
 
-    // Volvemos a conectar con el servidor de Groq
-    const groq = new OpenAI({ 
-      apiKey, 
-      baseURL: "https://api.groq.com/openai/v1", // 👈 Apuntamos a Groq
-      dangerouslyAllowBrowser: true 
-    });
+      const groq = new OpenAI({ 
+        apiKey, 
+        baseURL: "https://api.groq.com/openai/v1", 
+        dangerouslyAllowBrowser: true 
+      });
 
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile', // 👈 Mismo modelo
-      messages: [{ role: 'user', content: prompt }],
-    });
+      const response = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+      });
 
-      const nuevoFeedback = response.text?.trim() || '¡Buena improvisación!';
+      // 👇 CORREGIDO: Extracción del texto adaptada a Groq/OpenAI
+      const nuevoFeedback = response.choices[0]?.message?.content?.trim() || '¡Buena improvisación!';
       setFeedback(nuevoFeedback);
     } catch (error) {
       console.error(error);
@@ -243,14 +242,13 @@ export default function ImproPage() {
                 </select>
               </label>
 
-              {/* CAMBIADO: Ahora es un input de tipo number */}
               <label>Tiempo de escena:
                 <input 
                   type="number" 
                   className="input-tiempo-number"
                   value={tiempoConfig} 
                   min={1}
-                  max={300} // Límite opcional de 5 minutos para evitar abusos
+                  max={300} 
                   step={1}
                   onChange={(e) => setTiempoConfig(Number(e.target.value))}
                 />
