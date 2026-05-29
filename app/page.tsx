@@ -385,14 +385,14 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
         {pantalla === 'feedback' && (
           <div className="bloque-feedback">
             <div className="recuadro-tu-texto">
-              <h4>📖 Tu Libreto Improvisado:</h4>
+              <h4>📖 Tu Libreto Improvisado</h4>
               <p className="texto-guardado-usuario">
                 {textoUsuario.trim() ? `"${textoUsuario.trim()}"` : <i>[No ingresaste ningún texto, el escenario se quedó en absoluto silencio]</i>}
               </p>
             </div>
 
             <div className="recuadro-feedback">
-              <h3>📝 El Director opina:</h3>
+              <h3>📝 El Director opina</h3>
               {loading ? (
                 <p className="loading-text">El jurado está leyendo tu propuesta... 👏</p>
               ) : (
