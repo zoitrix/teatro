@@ -392,7 +392,7 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
             </div>
 
             <div className="recuadro-feedback">
-              <h3>📝 El Director opina</h3>
+              <h4>📝 El Director opina</h4>
               {loading ? (
                 <p className="loading-text">El jurado está leyendo tu propuesta... 👏</p>
               ) : (
