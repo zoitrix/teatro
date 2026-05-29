@@ -234,7 +234,7 @@ Título final:`;
     const prompt = `
     Actúa como un director de teatro de improvisación súper entusiasta, divertido y con mucha energía. 
     Tu alumno acaba de hacer un "Inicio de Impro" relámpago basado en el título "${titulo}". 
-    Su propuesta ha sido: "${textoUsuario.trim() || '[Silencio dramático... ¡Se quedó en blanco!]'}"
+    Su propuesta ha sido: "${textoUsuario.trim() || '[SIN_RESPUESTA]'}"
 
     Tu misión: Dale un feedback ultra corto, fresco y motivador. 
     Ten en cuenta que SOLO ha tenido ${tiempoConfig} segundos, ¡así que valora el caos y la velocidad!
@@ -247,7 +247,8 @@ Título final:`;
     1. Sé alocado, usa jerga teatral divertida y tono de comedia.
     2. NUNCA uses un tono serio, académico, rígido o destructivo.
     3. Devuelve ÚNICAMENTE tu comentario directo, sin introducciones, sin comillas, ni textos de relleno.
-    4. Extensión máxima: 3 o 4 frases (45 palabras). ¡Al grano!`;
+    4. Extensión máxima: 3 o 4 frases (30 palabras). ¡Al grano!
+    5. Si la propuesta es [SIN_RESPUESTA], ten en cuenta que el alumno no ha entregado la tarea pedida así que no ha cumplido con ningún objetivo. Échale la bronca y que vuelva a intentarlo.`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
