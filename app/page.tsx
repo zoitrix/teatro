@@ -181,7 +181,7 @@ Para que tenga sentido orgánico, inspírate en estructuras reales como:
 
 [REGLAS DE FORMATO CRÍTICAS]
 1. Devuelve ÚNICAMENTE la frase del título. Sin introducciones, sin comillas, sin puntos y sin explicaciones.
-2. Extensión: Entre 4 y 10 palabras.
+2. Extensión: Entre 4 y 7 palabras.
 
 Título final:`;
 
