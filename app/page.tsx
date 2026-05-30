@@ -171,44 +171,51 @@ export default function ImproPage() {
     setObra({ titulo: '', intro: '', giro1: '', giro2: '', desenlace: '' });
 
     const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
-    const promptTitulo = `
+const promptTitulo = `
 [ROL]
-Eres un espectador real, ingenioso, rápido y muy espontáneo en un show de comedia de improvisación teatral.
+Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de improvisación teatral (Catch de Impro). Tu fuerte es gritar títulos desternillantes desde el patio de butacas.
 
 [MISIÓN]
-Inventa una frase inicial o título único de 4 a 7 palabras en español para que los actores arranquen su escena. 
+Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español para que los actores arranquen su escena.
 
-[REGLAS GRAMATICALES Y DE SENTIDO]
-1. La frase DEBE tener sentido completo por sí misma. Debe entenderse perfectamente el contexto cómico al escucharla.
-2. Está TERMINANTEMENTE PROHIBIDO devolver palabras sueltas, frases incompletas, conceptos abstractos o estructuras gramaticalmente incorrectas.
-3. Debe sonar natural, fluida y realista; exactamente como algo que alguien del público gritaría en voz alta en un arranque de locura o espontaneidad.
+[REGLAS GRAMATICALES OBLIGATORIAS]
+1. SENTIDO COMPLETO: La frase debe empezar, desarrollarse y TERMINAR. Debe ser una oración con sujeto y predicado (acción clara).
+2. PROHIBIDO PUNTOS SUSPENSIVOS: No dejes la frase abierta ni a medias. Está terminantemente prohibido usar "...", "etc", o dejar un cabo suelto.
+3. VERBO CONJUGADO: La frase debe contener al menos un verbo conjugado que detone acción inmediata. No generes conceptos abstractos ni títulos de libros aburridos.
 
-[CONTEXTO / FILTRO SEMÁNTICO ULTRA-ESTRICTO]
-- Historial de títulos ya jugados en esta sesión: [${historialTitulos}]
-
-🚨 REGLA DE ORO (PROHIBIDO REPETIR):
-Analiza minuciosamente el historial anterior. Está prohibido repetir palabras clave, conceptos, temáticas, verbos principales o estructuras sintácticas que ya se hayan usado. Si el historial menciona un animal, un objeto de oficina o una parte de la casa, cambia radicalmente a un universo temático completamente distinto.
+[FILTRO SEMÁNTICO ULTRA-ESTRICTO (EVITAR REPETICIÓN)]
+- Historial de títulos ya jugados: [${historialTitulos}]
+🚨 REGLA DE ORO: Analiza el historial. Si allí se usó un entorno (ej. oficina, espacio), un objeto (ej. microondas) o un rol (ej. jefe, gato), cambia RADICALMENTE a un universo temático, vocabulario y estructura sintáctica totalmente diferentes.
 
 🚨 FILTRO DE CONTENIDO:
-Descarta por completo el drama doméstico, secretos oscuros, infidelidades, rupturas o tragedias. ¡Buscamos comedia, absurdo y juego!
+Nada de dramas, infidelidades reales, muertes o tragedias familiares. Buscamos comedia absurda, malentendidos locos, situaciones ridículas y juego limpio.
 
-[MECANISMO DE INSPIRACIÓN ASOCIATIVA]
-Fuerza a tu lógica a saltar a un escenario fresco basado en una de estas plantillas de ejemplo (pero inventando una combinación nueva):
-- Absurdos laborales cotidianos: "Tu jefe ha descubierto que vendes..." / "Mañana cerramos la fábrica de..."
-- Objetos cotidianos que actúan raro: "No debiste meter ese mando en..." / "El microondas nos está comunicando que..."
-- Órdenes o urgencias ridículas: "Saca inmediatamente ese pato del..." / "Llama ahora mismo al inspector de..."
-- Confesiones incómodas no dramáticas: "Creo que me he tragado el..." / "Tu gato me mira como si..."
+[MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
+Fuerza a tu lógica a imitar la estructura cerrada de estos ejemplos según el nivel elegido:
 
-[NIVEL DE EXIGENCIA: ${dificultad.toUpperCase()}]
-- FÁCIL: Comedia de enredos cotidianos en casa o el trabajo con un giro simple.
-- MEDIA: Declaraciones surrealistas, obsesiones absurdas o sospechas ridículas pero muy graciosas.
-- DIFÍCIL: Paradojas divertidas, pequeños giros existenciales cómicos o locuras poéticas con perfecto sentido al hablar.
+- FÁCIL (Enredos cotidianos):
+  * "Mi vecino esconde un pingüino en el congelador"
+  * "El fontanero se ha mudado a nuestro sofá"
+  * "Ayer vendí el coche para comprar gomitas"
+
+- MEDIA (Surrealismo y sospechas ridículas):
+  * "Tu calcetín izquierdo me está amenazando"
+  * "El inspector de nubes viene a multarnos"
+  * "Llevo tres días atrapado en este probador"
+
+- DIFÍCIL (Paradojas y locura poética):
+  * "El tiempo avanza más lento si parpadeas"
+  * "Mi reflejo en el espejo exige un aumento"
+  * "Los tomates están planeando una revolución armada"
+
+[CONTROL DE CALIDAD FINAL - ANTES DE CONTESTAR]
+Revisa mentalmente tu respuesta: ¿Tiene entre 4 y 7 palabras? ¿Termina con una palabra con sentido completo? ¿Tiene un verbo activo? Si la respuesta es NO a cualquiera de estas preguntas, reescríbela.
 
 [FORMATO DE SALIDA CRÍTICO]
-1. Devuelve ÚNICAMENTE las palabras de la frase/título.
-2. Está prohibido incluir introducciones, saludos, comentarios, comillas, puntos finales o explicaciones. 
+Devuelve ÚNICAMENTE las palabras de la frase. 
+Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones, saludos o explicaciones.
 
-Título final:`;
+Frase final:`;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
