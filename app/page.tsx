@@ -171,51 +171,61 @@ export default function ImproPage() {
     setObra({ titulo: '', intro: '', giro1: '', giro2: '', desenlace: '' });
 
     const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
+
 const promptTitulo = `
 [ROL]
-Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de improvisación teatral (Catch de Impro). Tu fuerte es gritar títulos desternillantes desde el patio de butacas.
+Eres un espectador real, gamberro, divertido y muy espontáneo en un show de comedia de improvisación teatral. Estás entre el público y gritas una frase ingeniosa para que los actores arranquen su escena desde una situación estimulante.
 
 [MISIÓN]
-Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español para que los actores arranquen su escena.
+Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español.
 
-[REGLAS GRAMATICALES OBLIGATORIAS]
-1. SENTIDO COMPLETO: La frase debe empezar, desarrollarse y TERMINAR. Debe ser una oración con sujeto y predicado (acción clara).
-2. PROHIBIDO PUNTOS SUSPENSIVOS: No dejes la frase abierta ni a medias. Está terminantemente prohibido usar "...", "etc", o dejar un cabo suelto.
-3. VERBO CONJUGADO: La frase debe contener al menos un verbo conjugado que detone acción inmediata. No generes conceptos abstractos ni títulos de libros aburridos.
+[🚨 REGLA CRÍTICA DE ORTOGRAFÍA Y GRAMÁTICA]
+- Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación (como "mentiendo"). Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto (ej: "mintiendo", "cuenten", "vuelen"). 
 
-[FILTRO SEMÁNTICO ULTRA-ESTRICTO (EVITAR REPETICIÓN)]
+[REGLAS DE ORO PARA EL TONO (NATURALIDAD TOTAL)]
+1. 🚨 PROHIBIDO EL TONO POÉTICO O METAFÓRICO: Evita palabras como "sol", "luna", "frágil", "alma", o frases filosóficas abstractas. Nadie grita poesía en un show de impro.
+2. 🚨 FRASES DE PÚBLICO REAL: Debe sonar a algo que un espectador grita con energía, un chisme, una orden, una acusación, una queja o una confesión absurda.
+3. VARIEDAD SINTÁCTICA: Está prohibido que todas tus frases empiecen por "Mi perro...", "Mi jefe..." o "El vecino...". Usa preguntas, imperativos (órdenes), exclamaciones o pon el tiempo/lugar al principio.
+
+[FILTRO SEMÁNTICO (EVITAR REPETICIÓN)]
 - Historial de títulos ya jugados: [${historialTitulos}]
-🚨 REGLA DE ORO: Analiza el historial. Si allí se usó un entorno (ej. oficina, espacio), un objeto (ej. microondas) o un rol (ej. jefe, gato), cambia RADICALMENTE a un universo temático, vocabulario y estructura sintáctica totalmente diferentes.
+🚨 REGLA DE ORO: No repitas conceptos, entornos ni palabras clave del historial. Si ya se usó una temática, salta a otra completamente distinta.
 
 🚨 FILTRO DE CONTENIDO:
-Nada de dramas, infidelidades reales, muertes o tragedias familiares. Buscamos comedia absurda, malentendidos locos, situaciones ridículas y juego limpio.
+Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
 
 [MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
-Fuerza a tu lógica a imitar la estructura cerrada de estos ejemplos según el nivel elegido:
+Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ejemplos reales:
 
-- FÁCIL (Enredos cotidianos):
-  * "Mi vecino esconde un pingüino en el congelador"
-  * "El fontanero se ha mudado a nuestro sofá"
-  * "Ayer vendí el coche para comprar gomitas"
+- FÁCIL (Enredos cotidianos y órdenes directas):
+  * "¡Saca inmediatamente ese pato del coche!" (Una orden loca)
+  * "Mañana cerramos la fábrica de almohadas" (Una noticia bomba)
+  * "¿Quién ha metido los pantalones en el lavavajillas?" (Una bronca doméstica)
+  * "Por favor, devuélveme mis cejas postizas" (Una súplica ridícula)
 
-- MEDIA (Surrealismo y sospechas ridículas):
-  * "Tu calcetín izquierdo me está amenazando"
-  * "El inspector de nubes viene a multarnos"
-  * "Llevo tres días atrapado en este probador"
+- MEDIA (Chismes, sospechas y situaciones incómodas):
+  * "Creo que el televisor nos está mintiendo" (Una sospecha absurda - ¡"mintiendo" con I!)
+  * "No debiste darle café a ese maniquí" (Un reproche divertido)
+  * "Ayer me persiguió un semáforo con prisa" (Una anécdota loca)
+  * "¿Desde cuándo los espaguetis tienen opiniones políticas?" (Una duda ridícula)
 
-- DIFÍCIL (Paradojas y locura poética):
-  * "El tiempo avanza más lento si parpadeas"
-  * "Mi reflejo en el espejo exige un aumento"
-  * "Los tomates están planeando una revolución armada"
+- DIFÍCIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
+  * "Si parpadeas, el pasillo se hace largo" (Una advertencia misteriosa)
+  * "Cuidado con los tomates, huelen el miedo" (Un peligro absurdo)
+  * "Tu doble de acción está cobrando más que tú" (Un chisme de camerinos)
+  * "Creo que nos está vigilando el panadero" (Una paranoia divertida)
 
 [CONTROL DE CALIDAD FINAL - ANTES DE CONTESTAR]
-Revisa mentalmente tu respuesta: ¿Tiene entre 4 y 7 palabras? ¿Termina con una palabra con sentido completo? ¿Tiene un verbo activo? Si la respuesta es NO a cualquiera de estas preguntas, reescríbela.
+Revisa tu frase antes de soltarla: ¿Las palabras existen y están bien escritas en castellano? ¿Suena natural? ¿La gritaría alguien del público en un teatro para reírse? ¿Tiene entre 4 y 7 palabras? Si suena a poesía o tiene dudas ortográficas, bórrala y genera otra.
 
 [FORMATO DE SALIDA CRÍTICO]
 Devuelve ÚNICAMENTE las palabras de la frase. 
-Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones, saludos o explicaciones.
+Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones o explicaciones.
 
 Frase final:`;
+
+
+console.log(historialTitulos);
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
