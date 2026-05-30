@@ -20,28 +20,18 @@ export default function ImproPage() {
   const [feedback, setFeedback] = useState<string>('');
   const [escuchando, setEscuchando] = useState<boolean>(false); 
   
-  // Histórico de títulos sugeridos durante la sesión
+  // Histórico de títulos sugeridos
   const [titulos, setTitulos] = useState<string[]>([]);
-
-  // Detectar si el dispositivo es móvil
-  const [esMovil, setEsMovil] = useState<boolean>(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); 
   
-  // 🛡️ Almacén seguro para evitar que el estado asíncrono borre el texto anterior
+  // 🛡️ Fuentes de la verdad absolutas para evitar cierres de ámbito (closures) de React
   const textoAcumuladoRef = useRef<string>('');
+  const esBotonFinalizarRef = useRef<boolean>(false);
+  const deberiaEstarGrabandoRef = useRef<boolean>(false);
 
-  // Detectar el tamaño de la pantalla al cargar
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const checkMovil = () => setEsMovil(window.innerWidth <= 768);
-    checkMovil();
-    window.addEventListener('resize', checkMovil);
-    return () => window.removeEventListener('resize', checkMovil);
-  }, []);
-
-  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ ADAPTATIVO (MÓVIL Y PC BLINDADO)
+  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ (Único para PC y Móvil)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -50,7 +40,6 @@ export default function ImproPage() {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
-      // Dejamos interimResults siempre en true para capturar hasta el microsegundo final
       recognition.interimResults = true; 
       recognition.lang = 'es-ES';
 
@@ -58,13 +47,16 @@ export default function ImproPage() {
         let fraseActualProvisional = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          fraseActualProvisional += event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            // Si el fragmento es definitivo, lo consolidamos en el acumulador de inmediato
+            textoAcumuladoRef.current = (textoAcumuladoRef.current + ' ' + event.results[i][0].transcript).trim();
+          } else {
+            fraseActualProvisional += event.results[i][0].transcript;
+          }
         }
 
-        // Concatenamos lo que ya teníamos guardado históricamente con lo que está entrando ahora
+        // Mostramos en pantalla el histórico consolidado + lo que está procesando ahora mismo
         const textoCompleto = (textoAcumuladoRef.current + ' ' + fraseActualProvisional).trim();
-        
-        // Limpiamos espacios dobles extraños que ensucian el diseño
         const textoLimpio = textoCompleto.replace(/\s+/g, ' ');
         
         setTextoUsuario(textoLimpio);
@@ -77,52 +69,31 @@ export default function ImproPage() {
       };
 
       recognition.onend = () => {
-        setEscuchando(false);
+        // 🔥 SISTEMA ANTI-CORTE: Si el navegador apaga el micro por silencio pero seguimos jugando, lo reactivamos
+        if (deberiaEstarGrabandoRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            console.log("Reintentando encendido de micrófono...");
+          }
+        } else {
+          setEscuchando(false);
+        }
       };
 
       recognitionRef.current = recognition;
     }
   }, []); 
 
-  // 🚀 AUTOMATIZACIÓN PARA PC (Se activa solo al entrar en modo juego si no es móvil)
-  useEffect(() => {
-    if (pantalla === 'jugando' && !esMovil) {
-      const timerMicro = setTimeout(() => {
-        if (recognitionRef.current && !escuchando) {
-          try {
-            recognitionRef.current.start();
-            setEscuchando(true);
-          } catch (e) {
-            console.error("No se pudo auto-iniciar el micrófono en PC:", e);
-          }
-        }
-      }, 300);
-
-      return () => clearTimeout(timerMicro);
-    }
-  }, [pantalla, esMovil]);
-
-  // ⏱️ TEMPORIZADOR MODIFICADO: Captura el audio asíncronamente en el segundo 0
+  // ⏱️ TEMPORIZADOR Y CONTROLADOR DE FLUJO
   useEffect(() => {
     if (pantalla === 'jugando' && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
     } else if (timeLeft === 0 && pantalla === 'jugando') {
-      // Forzar apagado del micrófono inmediatamente para que vuelque los buffers de audio residuales
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          console.error(e);
-        }
-        setEscuchando(false);
+      // Si el tiempo llega a 0 y NO se pulsó el botón manualmente, finaliza automáticamente
+      if (!esBotonFinalizarRef.current) {
+        apagarMicrofonoYFinalizar();
       }
-
-      // Pequeño margen estratégico (500ms) para que el estado de React se entere de las últimas palabras
-      const retrasoVaciado = setTimeout(() => {
-        finalizarEscena();
-      }, 500);
-
-      return () => clearTimeout(retrasoVaciado);
     }
     
     return () => {
@@ -130,38 +101,39 @@ export default function ImproPage() {
     };
   }, [timeLeft, pantalla]);
 
-  // 🎛️ CONTROLES EXCLUSIVOS DE MÓVIL (Pulsar y mantener blindado)
-  const iniciarGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!esMovil) return;
-    e.preventDefault(); 
-    
-    if (recognitionRef.current && !escuchando) {
+  // Encender micrófono de manera segura (Apto para móvil gracias al click previo de "Subir el Telón")
+  const encenderMicrofono = () => {
+    if (recognitionRef.current) {
+      deberiaEstarGrabandoRef.current = true;
       try {
         recognitionRef.current.start();
         setEscuchando(true);
-      } catch (err) {
-        console.error(err);
+      } catch (e) {
+        console.error("Error al iniciar el micrófono:", e);
       }
     }
   };
 
-  const detenerGrabacionMovil = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!esMovil) return;
-    e.preventDefault();
-    
-    if (recognitionRef.current && escuchando) {
-      // Antes de apagar el micro, congelamos de manera segura lo que el usuario ha dicho
-      // para que la siguiente pulsación sume en lugar de sobreescribir.
-      textoAcumuladoRef.current = textoUsuario.trim();
-      
-      recognitionRef.current.stop();
+  const apagarMicrofonoYFinalizar = () => {
+    deberiaEstarGrabandoRef.current = false;
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
       setEscuchando(false);
     }
+
+    // Un mini delay para asegurar que el último evento 'onresult' se procese antes de enviar a la IA
+    setTimeout(() => {
+      finalizarEscena();
+    }, 400);
   };
 
   const getExplicacion = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Sal a escena y describe el inicio de una historia a través del título que te den. Muestra la relación de los personajes, el estado anímico, el conflicto y el lugar';
+      return 'Sal a escena y describe el inicio de una historia a través del título que te den. Muestra la relación de los personajes, el estado anímico, el conflicto y el lugar.';
     }
     return '¡A improvisar!';
   };
@@ -174,11 +146,13 @@ export default function ImproPage() {
 
     setLoading(true);
     setTextoUsuario('');
-    textoAcumuladoRef.current = ''; // Reseteamos el acumulador histórico para la nueva escena
+    textoAcumuladoRef.current = ''; 
+    esBotonFinalizarRef.current = false;
     setFeedback('');
 
     const randomSalt = Math.floor(Math.random() * 9999);
-
+    const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
+    
     const prompt = `
 [ROL]
 Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de improvisación.
@@ -188,21 +162,24 @@ Inventa una frase inicial o título único para que los actores arranquen su esc
 ¡IMPORTANTE! La frase debe estar perfectamente construida en español, tener sentido completo y sonar como algo que diría una persona real en voz alta. Evita palabras sueltas sin conector.
 (ID: ${randomSalt})
 
+[CONTEXTO]
+- Historial de títulos ya jugados en esta sesión: [${historialTitulos}] (Evita repetir chistes, ideas, escenarios o conceptos que encajen con estos títulos previos).
+
 [ESTRUCTURA DE SINTAXIS RECOMENDADA]
-Para que tenga sentido orgánico, inspírate en estructuras reales como:
+Inspírate en estructuras reales como:
 - Una queja o acusación: "Me has vuelto a..." / "Tu hermano siempre..."
 - Una sospecha incómoda: "Creo que el..." / "Sé lo que hiciste con..."
 - Una orden o advertencia: "No toques ese..." / "Saca eso de..."
 - Una confesión surrealista: "Nunca te dije que..." / "Me da miedo tu..."
 
 [NIVEL DE EXIGENCIA: ${dificultad.toUpperCase()}]
-- FÁCIL: Comedia cotidiana, problemas domésticos o de pareja. (Ej: "No dejes la tostadora encendida" o "Te has gastado el dinero del alquiler").
-- MEDIA: Declaraciones incómodas, secretos destapados o sospechas absurdas. (Ej: "Creo que el gato nos está vigilando" o "Tu madre descubrió el sótano").
-- DIFÍCIL: Paradojas divertidas, giros existenciales o locuras poéticas con perfecto sentido. (Ej: "El tiempo se ha congelado en la oficina" o "Tus plantas están planeando algo").
+- FÁCIL: Comedia cotidiana, problemas domésticos o de pareja.
+- MEDIA: Declaraciones incómodas, secretos destapados o sospechas absurdas.
+- DIFÍCIL: Paradojas divertidas, giros existenciales o locuras poéticas con perfecto sentido.
 
 [REGLAS DE FORMATO CRÍTICAS]
 1. Devuelve ÚNICAMENTE la frase del título. Sin introducciones, sin comillas, sin puntos y sin explicaciones.
-2. Extensión: Entre 4 y 7 palabras. Usa más si necesitas que la frase tenga todos los artículos y esté bien estructurada gramaticalmente.
+2. Extensión: Entre 4 y 7 palabras.
 
 Título final:`;
 
@@ -227,11 +204,13 @@ Título final:`;
 
       const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
       setTitulo(nuevoTitulo);
-      
       setTitulos((prev) => [...prev, nuevoTitulo]);
 
       setTimeLeft(tiempoConfig); 
       setPantalla('jugando');
+      
+      // 🎤 Arrancamos el micrófono inmediatamente para todos los dispositivos
+      encenderMicrofono();
 
     } catch (error) {
       console.error(error);
@@ -242,55 +221,35 @@ Título final:`;
   };
 
   const finalizarEscena = async (): Promise<void> => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
-      setEscuchando(false);
-    }
-
     setLoading(true);
     setPantalla('feedback');
 
-    // Comprobación de texto limpia y directa usando el estado reactivo unificado
-    let textoFinalSeguro = textoUsuario.trim();
-    if (!textoFinalSeguro) {
-      const contenedor = document.querySelector('.texto-guardado-usuario');
-      if (contenedor && contenedor.textContent) {
-        textoFinalSeguro = contenedor.textContent.replace(/[\[\]"']/g, "").trim();
-      }
-    }
-
-    const propuestaFinal = textoFinalSeguro && textoFinalSeguro !== "" ? textoFinalSeguro : '[SIN_RESPUESTA]';
-    const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
+    // 🛡️ LEER DE LA REF: Recuperamos el texto del acumulador real, ignorando estados desactualizados
+    const textoFinalSeguro = textoAcumuladoRef.current.trim();
+    const propuestaFinal = textoFinalSeguro !== "" ? textoFinalSeguro : '[SIN_RESPUESTA]';
 
     const prompt = `
 [ROL]
 Actúa como un director de teatro de improvisación súper entusiasta, divertido, con mucha energía y jerga teatral alocada.
 
 [CONTEXTO DE ENTRADA]
-- Título del ejercicio actual dado por el sistema: "${titulo}" (Ojo: Este título NO lo ha creado el alumno, no le felicites por él).
-- Historial de títulos ya jugados en esta sesión: [${historialTitulos}] (Evita repetir chistes, ideas, escenarios o conceptos que encajen con estos títulos previos).
+- Título del ejercicio actual dado por el sistema: "${titulo}"
 - Propuesta improvisada por el alumno en ${tiempoConfig} segundos: "${propuestaFinal}"
 
 [INSTRUCCIONES DE EVALUACIÓN (PASO A PASO)]
 
 1. CASO CRÍTICO - SI LA PROPUESTA ES "[SIN_RESPUESTA]":
-   El alumno se ha quedado mudo en el escenario y no ha dicho absolutamente nada. No intentes buscarle el lado positivo ni inventar un contexto. Échale una bronca divertida de director teatral, dile que se ha quedado congelado como una estatua y exígele con energía que vuelva a subir al escenario a intentarlo. Fin.
+   El alumno se ha quedado mudo en el escenario. Échale una bronca divertida de director teatral, dile que se ha quedado congelado como una estatua y exígele con energía que vuelva a subir al escenario a intentarlo. Fin.
 
-2. CASO GENERAL - SI EL ALUMNO HA RESPUESTO ALGO DIFERENTE A "[SIN RESPUESTA]":
-   Analiza EXCLUSIVAMENTE su propuesta. Valora la velocidad y el caos. Revisa de golpe si se intuyen estos 4 pilares: ¿Quiénes son? (Relación), ¿Qué sienten? (Ánimo), ¿Cuál es el problema? (Conflicto) y ¿Dónde están? (Lugar).
+2. CASO GENERAL - SI EL ALUMNO HA RESPUESTO ALGO DIFERENTE A "[SIN_RESPUESTA]":
+   Analiza su propuesta. Valora la velocidad y el caos. Revisa si se intuyen estos 4 pilares: ¿Quiénes son? (Relación), ¿Qué sienten? (Ánimo), ¿Cuál es el problema? (Conflicto) y ¿Dónde están? (Lugar).
    - Si están los pilares: ¡Celébralo con locura!
-   - Si falta alguno: No critiques. Propón tú un añadido loco e improvisado sobre la marcha para completar la escena, pero que sea una idea TOTALMENTE NUEVA y diferente a lo visto en el [Historial de títulos ya jugados].
+   - Si falta alguno: No critiques. Propón tú un añadido loco e improvisado sobre la marcha para completar la escena.
 
 [REGLAS DE FORMATO ABSOLUTAS]
 - Devuelve ÚNICAMENTE el comentario directo del director en primera persona. 
 - Prohibido incluir introducciones, saludos, despedidas, comillas o textos de relleno.
 - Extensión máxima: 3 frases cortas (máximo 35 palabras en total). ¡Puro ritmo de comedia!`;
-
-console.log(prompt);
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -316,6 +275,11 @@ console.log(prompt);
     } finally {
       setLoading(false);
     }
+  };
+
+  const clickBotonTerminarManual = () => {
+    esBotonFinalizarRef.current = true;
+    apagarMicrofonoYFinalizar();
   };
 
   const reiniciarTeatro = (): void => {
@@ -380,33 +344,18 @@ console.log(prompt);
             </div>
 
             <div className="formulario-texto-wrapper centralizado">
-              {/* 📱 VISTA MÓVIL: Botón táctil integrado */}
-              {esMovil ? (
-                <button 
-                  type="button" 
-                  className={`btn-teatro btn-walkie-talkie-recto ${escuchando ? 'grabando-activo' : ''}`}
-                  onMouseDown={iniciarGrabacionMovil}
-                  onMouseUp={detenerGrabacionMovil}
-                  onTouchStart={iniciarGrabacionMovil}
-                  onTouchEnd={detenerGrabacionMovil}
-                >
-                  {escuchando ? '🔴 ESCUCHANDO... SUELTA PARA PAUSAR' : '🎤 MANTÉN PULSADO PARA HABLAR'}
-                </button>
-              ) : (
-                /* 💻 VISTA ESCRITORIO: Autostart activo */
-                <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo-pc' : ''}`}>
-                  <p className="texto-estado">
-                    {escuchando ? "🎙️ El escenario está abierto... ¡Habla directamente!" : "🔇 Configurando entorno de audio..."}
-                  </p>
-                </div>
-              )}
+              <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo-pc' : ''}`}>
+                <p className="texto-estado">
+                  {escuchando ? "🎙️ El escenario está abierto... ¡Habla directamente!" : "🔇 Configurando entorno de audio..."}
+                </p>
+              </div>
             </div>
 
-            {/*<div className="previsualizacion-texto-temporal">
+            <div className="previsualizacion-texto-temporal">
               {textoUsuario && <p className="fade-in-texto">✍️ {textoUsuario}</p>}
-            </div>*/}
+            </div>
 
-            <button className="btn-teatro btn-enviar" onClick={finalizarEscena} disabled={loading}>
+            <button className="btn-teatro btn-enviar" onClick={clickBotonTerminarManual} disabled={loading}>
               ¡Terminar Escena! 🔔
             </button>
           </div>
