@@ -339,6 +339,11 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
         {/* PANTALLA 2: JUGANDO */}
         {pantalla === 'jugando' && (
           <div className="bloque-juego">
+
+            <div className="recuadro-tu-texto">
+              <h4>📖 Tu Libreto Improvisado</h4>
+              {textoUsuario.trim() && <p className="fade-in-texto">{textoUsuario.trim()}</p>}
+            </div>
             <div className="cronometro">
               ⏱️ {timeLeft}s
             </div>
@@ -346,13 +351,9 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
             <div className="formulario-texto-wrapper centralizado">
               <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo-pc' : ''}`}>
                 <p className="texto-estado">
-                  {escuchando ? "🎙️ El escenario está abierto... ¡Habla directamente!" : "🔇 Configurando entorno de audio..."}
+                  {escuchando ? "🎙️ El escenario está abierto... ¡Habla directamente! 🎙️" : "🔇 Configurando entorno de audio..."}
                 </p>
               </div>
-            </div>
-
-            <div className="previsualizacion-texto-temporal">
-              {textoUsuario && <p className="fade-in-texto">✍️ {textoUsuario}</p>}
             </div>
 
             <button className="btn-teatro btn-enviar" onClick={clickBotonTerminarManual} disabled={loading}>

@@ -146,6 +146,7 @@ select {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  text-align: center;
 }
 
 /* El cuadro de texto con look de libreto/pergamino */
