@@ -288,7 +288,7 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
 [REGLAS DE FORMATO ABSOLUTAS]
 - Devuelve ÚNICAMENTE el comentario directo del director en primera persona. 
 - Prohibido incluir introducciones, saludos, despedidas, comillas o textos de relleno.
-- Extensión máxima: 3 frases cortas (máximo 35 palabras en total). ¡Puro ritmo de comedia!`;
+- Extensión máxima: 4 frases cortas (máximo 45 palabras en total). ¡Puro ritmo de comedia!`;
 
     try {
       const response = await groq.chat.completions.create({
