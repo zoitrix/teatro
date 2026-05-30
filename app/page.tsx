@@ -501,7 +501,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   return (
     <div className="teatro-container">
       <header className="teatro-header">
-        <h1>🎭 ¡Impro! 🎬</h1>
+        <h1>🎭 ¡Impro Estructura! 🎬</h1>
         <p className="subtitulo">
           {pantalla === 'config' ? '¡Saca un título y construye tu historia!' : `Fase Actual: Acto de ${faseActual.toUpperCase()}`}
         </p>

@@ -434,32 +434,33 @@ Frase final:`;
     setHistorialLetra(nuevoHistorial);
 
     try {
-      const response = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          { 
-            role: 'system', 
-            content: `Eres un actor de improvisación teatral de élite, rápido, cómico y con gran agilidad mental. 
-Estamos en pleno escenario, interpretando el acto de ${faseActualRef.current.toUpperCase()} de la obra titulada "${titulo}".
+        const response = await groq.chat.completions.create({
+  model: 'llama-3.1-8b-instant',
+  messages: [
+    { 
+      role: 'system', 
+      content: `ERES UN ACTOR DE IMPROVISACIÓN (TU PERSONAJE):
+- Eres el compañero de escena del usuario. Hablas SIEMPRE en primera persona ("Yo", "Nosotros").
+- ESTÁ PROHIBIDO ser narrador. No describas la escena, no cuentes lo que ocurre, solo actúa y habla como un personaje dentro de la historia.
+- Mantén la coherencia interna: Si el usuario estableció que estamos en una cocina, no inventes que estamos en Marte. Trata los elementos ya mencionados como realidades físicas.
 
-Tu objetivo es mantener viva la escena co-creando con el usuario. Para ello, debes seguir a rajatabla las REGLAS DE ORO DE LA IMPROVISACIÓN:
-
-1. El Mantra del "Sí, y...": Acepta inmediatamente como verdad absoluta todo lo que el usuario proponga. Jamás le contradigas, niegues o bloquees su narrativa. Construye sobre su idea aportando un elemento nuevo que haga avanzar la historia.
-2. Escucha Activa y Presente: Analiza la última réplica del usuario, su tono y su emoción. Responde directamente a lo que acaba de suceder en este preciso instante.
-3. Servicio al Compañero: Tu misión es hacer lucir bien al usuario. Adapta tu energía a la suya para elevar la escena juntos.
-4. Abraza el Error: Si el usuario dice un sinsentido o se queda en silencio (como un bloqueo expresado en '[SIN_RESPUESTA]'), incorpóralo de manera brillante y divertida.
-5. Confianza Espontánea: Sé directo y reacciona sin sobreanalizar.
+REGLAS DE ORO DE LA IMPROVISACIÓN:
+1. El Mantra del "Sí, y...": Acepta lo que el usuario dijo y añade un detalle que sea una consecuencia lógica de lo anterior. Si el usuario propone una locura, aceptamos la locura, pero mantenemos la lógica interna de esa locura.
+2. Acción-Reacción: No cambies de tema drásticamente. Si el usuario habla de un perro, responde sobre el perro, no sobre una pizza.
+3. Servicio al Compañero: Tu objetivo es que la escena crezca orgánicamente, no que sea una lucha de egos.
+4. Coherencia Absurda: Podemos jugar en un mundo fantástico o disparatado, pero las leyes de ese mundo deben ser constantes. Si algo pasó, sigue siendo verdad.
 
 ⚠️ REGLAS ESTRICTAS DE FORMATO:
-- Devuelve ÚNICAMENTE tu línea de diálogo limpia.
-- Máximo 20 palabras. Sé extremadamente conciso y directo.
-- Está TERMINANTEMENTE PROHIBIDO incluir acotaciones, paréntesis, asteriscos, emociones escritas o indicaciones escénicas. Solo texto hablado.` 
-          },
-          ...nuevoHistorial
-        ],
-        temperature: 0.85,
-        max_tokens: 60,
-      });
+- HABLA COMO UN PERSONAJE: Di tus frases tal cual, sin guiones, sin nombres de personajes (ej: "¡No toques eso!" y no "Juan: ¡No toques eso!").
+- MÁXIMO 20 PALABRAS: Conciso, directo, al grano.
+- PROHIBIDO NARRAR: Jamás uses expresiones como "El personaje entra", "La escena transcurre", "El perro mira".
+- CERO PUNTUACIÓN DE GUION: Está prohibido incluir acotaciones, paréntesis, asteriscos o emociones entre corchetes.` 
+    },
+    ...nuevoHistorial
+  ],
+  temperature: 0.7, // Bajamos un poco la temperatura para mayor coherencia
+  max_tokens: 60,
+});
 
       const respuestaIA = response.choices[0]?.message?.content?.trim() || '¡Continúa, te escucho!';
       setHistorialLetra(prev => [...prev, { role: 'assistant', content: respuestaIA }]);
@@ -703,7 +704,7 @@ Tu objetivo es mantener viva la escena co-creando con el usuario. Para ello, deb
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                       <span style={{ color: '#333' }}>{acto.nombre}</span>
                       <span style={{ color: evalActo?.aprobado ? '#27ae60' : '#b92929' }}>
-                        {evalActo ? (evalActo.aprobado ? '✅ APTO' : '❌ NO APTO') : '⏳ Procesando...'}
+                        {evalActo ? (evalActo.aprobado ? '✅ APTO' : '❌ NO APTO') : '⏸️ No procesado'}
                       </span>
                     </div>
                     <p style={{ margin: '6px 0 0 0', fontSize: '0.9rem', color: '#555' }}>
@@ -734,7 +735,7 @@ Tu objetivo es mantener viva la escena co-creando con el usuario. Para ello, deb
     <div className={styles.teatroPageWrapper}>
       <div className={styles.teatroContainer}>
         <header className={styles.teatroHeader}>
-          <h1>🎭 Laboratorio de Impro</h1>
+        <h1>🎭 ¡Batalla de Impro! 🎬</h1>
           <p className={styles.subtitulo}>
             {pantalla === 'config' ? 'Ajusta los tiempos del libreto por actos' : `Acto en Curso: ${faseActual.toUpperCase()}`}
           </p>
@@ -743,7 +744,7 @@ Tu objetivo es mantener viva la escena co-creando con el usuario. Para ello, deb
         <main className={styles.escenario}>
           {pantalla === 'config' && (
             <div className={styles.bloqueConfig}>
-              <div className={styles.recuadroExplicativo}>
+              <div className={styles.recuadroReglas}>
                 <strong>📋 Reglas de la Academia:</strong> Cada acto se cerrará automáticamente al agotarse su tiempo. Habla con fluidez con la IA. El director calificará cada bloque fijando su nota en el monitor de abajo y verás el informe completo al terminar.
               </div>
 

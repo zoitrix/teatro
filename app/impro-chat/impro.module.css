@@ -149,6 +149,18 @@
   margin-bottom: -5px;
 }
 
+.recuadroReglas {
+  background-color: #fff3cd;
+  border-right: 5px solid #ffc107;
+  border-left: 5px solid #ffc107;
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 1rem;
+  text-align: justify;
+  color: #664d03;
+  width: 100%;
+}
+
 .recuadroExplicativo {
   background-color: #fff3cd;
   border-right: 5px solid #ffc107;
