@@ -34,16 +34,17 @@ interface InformeDirector {
 export default function ImproChatPage() {
   const [dificultad, setDificultad] = useState<string>('media');
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>({
-    intro: 40,
-    giro1: 40,
-    giro2: 40,
-    desenlace: 40
+    intro: 60,
+    giro1: 120,
+    giro2: 120,
+    desenlace: 60
   });
 
   const [pantalla, setPantalla] = useState<'config' | 'jugando' | 'final'>('config');
   const [faseActual, setFaseActual] = useState<FaseActo>('intro');
   const [titulo, setTitulo] = useState<string>('');
   const [historialLetra, setHistorialLetra] = useState<MensajeChat[]>([]);
+    const [titulos, setTitulos] = useState<string[]>([]);
   
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingTexto, setLoadingTexto] = useState<string>('');
@@ -174,6 +175,60 @@ export default function ImproChatPage() {
     setUltimoFeedbackFijo(null);
     setInformeFinal({ intro: null, giro1: null, giro2: null, 'desenlace': null });
 
+    const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
+
+const promptTitulo = `
+[ROL]
+Eres un espectador real, gamberro, divertido y muy espontáneo en un show de comedia de improvisación teatral. Estás entre el público y gritas una frase ingeniosa para que los actores arranquen su escena desde una situación estimulante.
+
+[MISIÓN]
+Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español.
+
+[🚨 REGLA CRÍTICA DE ORTOGRAFÍA Y GRAMÁTICA]
+- Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación (como "mentiendo"). Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto (ej: "mintiendo", "cuenten", "vuelen"). 
+
+[REGLAS DE ORO PARA EL TONO (NATURALIDAD TOTAL)]
+1. 🚨 PROHIBIDO EL TONO POÉTICO O METAFÓRICO: Evita palabras como "sol", "luna", "frágil", "alma", o frases filosóficas abstractas. Nadie grita poesía en un show de impro.
+2. 🚨 FRASES DE PÚBLICO REAL: Debe sonar a algo que un espectador grita con energía, un chisme, una orden, una acusación, una queja o una confesión absurda.
+3. VARIEDAD SINTÁCTICA: Está prohibido que todas tus frases empiecen por "Mi perro...", "Mi jefe..." o "El vecino...". Usa preguntas, imperativos (órdenes), exclamaciones o pon el tiempo/lugar al principio.
+
+[FILTRO SEMÁNTICO (EVITAR REPETICIÓN)]
+- Historial de títulos ya jugados: [${historialTitulos}]
+🚨 REGLA DE ORO: No repitas conceptos, entornos ni palabras clave del historial. Si ya se usó una temática, salta a otra completamente distinta.
+
+🚨 FILTRO DE CONTENIDO:
+Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
+
+[MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
+Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ejemplos reales:
+
+- FÁCIL (Enredos cotidianos y órdenes directas):
+  * "¡Saca inmediatamente ese pato del coche!" (Una orden loca)
+  * "Mañana cerramos la fábrica de almohadas" (Una noticia bomba)
+  * "¿Quién ha metido los pantalones en el lavavajillas?" (Una bronca doméstica)
+  * "Por favor, devuélveme mis cejas postizas" (Una súplica ridícula)
+
+- MEDIA (Chismes, sospechas y situaciones incómodas):
+  * "Creo que el televisor nos está mintiendo" (Una sospecha absurda - ¡"mintiendo" con I!)
+  * "No debiste darle café a ese maniquí" (Un reproche divertido)
+  * "Ayer me persiguió un semáforo con prisa" (Una anécdota loca)
+  * "¿Desde cuándo los espaguetis tienen opiniones políticas?" (Una duda ridícula)
+
+- DIFÍCIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
+  * "Si parpadeas, el pasillo se hace largo" (Una advertencia misteriosa)
+  * "Cuidado con los tomates, huelen el miedo" (Un peligro absurdo)
+  * "Tu doble de acción está cobrando más que tú" (Un chisme de camerinos)
+  * "Creo que nos está vigilando el panadero" (Una paranoia divertida)
+
+[CONTROL DE CALIDAD FINAL - ANTES DE CONTESTAR]
+Revisa tu frase antes de soltarla: ¿Las palabras existen y están bien escritas en castellano? ¿Suena natural? ¿La gritaría alguien del público en un teatro para reírse? ¿Tiene entre 4 y 7 palabras? Si suena a poesía o tiene dudas ortográficas, bórrala y genera otra.
+
+[FORMATO DE SALIDA CRÍTICO]
+Devuelve ÚNICAMENTE las palabras de la frase. 
+Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones o explicaciones.
+
+Frase final:`;
+
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
       if (!apiKey) throw new Error("Falta la API Key.");
@@ -181,12 +236,13 @@ export default function ImproChatPage() {
 
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
-        messages: [{ role: 'user', content: 'Eres un espectador en un show de impro gamberro. Grita una frase inicial o acusación de entre 4 y 7 palabras en español. Sin comillas ni puntos.' }],
+        messages: [{ role: 'user', content: promptTitulo }],
         max_tokens: 40,
       });
 
       const nuevoTitulo = response.choices[0]?.message?.content?.trim() || '¡El misterio del calcetín perdido!';
       setTitulo(nuevoTitulo);
+      setTitulos((prev) => [...prev, nuevoTitulo]);
       setTimeLeft(tiemposConfig.intro);
       setPantalla('jugando');
       setLoading(false);
@@ -281,18 +337,24 @@ export default function ImproChatPage() {
     } else if (faseTerminada === 'desenlace') {
       finalizarFuncionYMostrarInforme();
     }
-  };
-
-  const ejecutarEvaluacionDirectorEnBackstage = async (fase: FaseActo, textoActor: string) => {
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    if (!apiKey) return;
     
-    const groq = new OpenAI({ apiKey, baseURL: "https://api.groq.com/openai/v1", dangerouslyAllowBrowser: true });
-    const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
+  };const ejecutarEvaluacionDirectorEnBackstage = async (fase: FaseActo, textoActor: string) => {
+  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+  if (!apiKey || apiKey.trim() === "") {
+    console.error("Falta la API Key para la evaluación.");
+    return;
+  }
+  
+  // 🔽 CONFIGURACIÓN CAMBIADA PARA EVITAR EL BUG DE URL 🔽
+  const groq = new OpenAI({ 
+    apiKey: apiKey.trim(), 
+    baseURL: "https://api.groq.com/openai/v1", 
+    dangerouslyAllowBrowser: true 
+  });
+  
+  const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
 
-    // Configurar instrucciones del Director dinámicamente según la fase/acto actual
     let consignasEspecificas = '';
-    
     if (faseActual === 'intro') {
       consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
 - Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>. El título es fijo y no se juzga.
@@ -332,7 +394,7 @@ Tu único trabajo es juzgar si el <texto_del_actor> cumple con el objetivo técn
 ${consignasEspecificas}
 
 [DATOS DE ENTRADA DE LA ESCENA]
-<titulo_escena_contexto>${titulo}</titulo_escena_contexto>
+<titulo_escena_context>${titulo}</titulo_escena_context>
 <texto_del_actor>${propuestaFinal}</texto_del_actor>
 
 🚨 [REGLA INQUEBRANTABLE DE MUTISMO]
@@ -340,10 +402,10 @@ ${consignasEspecificas}
 - Si hay cualquier otra propuesta escrita, ignora esta regla de mutismo y evalúala bajo los criterios normales detallados arriba.
 
 [FORMATO DE SALIDA ESTRICTO]
-Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no uses la sintaxis \`\`\`json ni introducciones de texto. Solo el objeto crudo:
+Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
 {
   "aprobado": true o false,
-  "comentario": "Tu crítica teatral breve de máximo 35 palabras utilizando tu jerga, validando por qué la propuesta funciona dramáticamente o detallando qué faltó de forma específica. Da detalles de lo que han hablado los dos actores."
+  "comentario": "Tu crítica teatral..."
 }`;
 
     try {
@@ -351,14 +413,29 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: promptDirector }],
         temperature: 0.1,
-        max_tokens: 120
+        max_tokens: 150,
+        // ✨ FUERZA EL MODO JSON NATIVO EN GROQ ✨
+        response_format: { type: "json_object" } 
       });
 
       const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
-      const inicioJson = textoCrudo.indexOf('{');
-      const finJson = textoCrudo.lastIndexOf('}');
-      const jsonLimpio = textoCrudo.substring(inicioJson, finJson + 1);
-      const resultado = JSON.parse(jsonLimpio);
+      
+      let resultado;
+      try {
+        // Al usar response_format, el texto viene limpio en un 99.9% de los casos
+        resultado = JSON.parse(textoCrudo);
+      } catch (parseError) {
+        console.warn("Fallo el parseo directo, intentando limpiar el JSON...", parseError);
+        // Fallback por si acaso vienen caracteres raros alrededor del JSON
+        const inicioJson = textoCrudo.indexOf('{');
+        const finJson = textoCrudo.lastIndexOf('}');
+        if (inicioJson !== -1 && finJson !== -1) {
+          const jsonLimpio = textoCrudo.substring(inicioJson, finJson + 1);
+          resultado = JSON.parse(jsonLimpio);
+        } else {
+          throw new Error("No se detectó estructura JSON elemental.");
+        }
+      }
 
       setInformeFinal(prev => ({
         ...prev,
@@ -372,12 +449,21 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
       const nombresLegibles: Record<string, string> = { intro: 'Acto I (Intro)', giro1: 'Acto II (1er Giro)', giro2: 'Acto III (2do Giro)', desenlace: 'Acto IV (Desenlace)' };
       setUltimoFeedbackFijo({
         fase: nombresLegibles[fase] || fase.toUpperCase(),
-        texto: resultado.comentario,
+        texto: resultado.comentario || 'Ritmo de escena adecuado.',
         aprobado: !!resultado.aprobado
       });
 
     } catch (e) {
       console.error("Error evaluando acto en backstage:", e);
+      // 🛡️ CONTROL DE DAÑOS: Si la IA explota, la app continúa y no se congela
+      setInformeFinal(prev => ({
+        ...prev,
+        [fase]: {
+          aprobado: true, 
+          comentario: '¡El director asiente desde la oscuridad! El show debe continuar.',
+          transcripcionAcumulada: propuestaFinal === '[SIN_RESPUESTA]' ? 'Sin intervención de voz.' : propuestaFinal
+        }
+      }));
     }
   };
 
@@ -420,7 +506,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
 
           <main className={styles.bloqueFeedback}>
             <div className={styles.carteleraTitulo}>
-              <h2>OBRA: "{titulo}"</h2>
+              <h2>OBRA: {titulo}</h2>
             </div>
 
             {/* 📖 SECCIÓN NUEVA: EL GUION COMPLETO DE LA OBRA */}
@@ -549,7 +635,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
               </div>
 
               <div className={styles.carteleraTitulo}>
-                <h2>"{titulo}"</h2>
+                <h2>{titulo}</h2>
               </div>
 
               <div className={styles.recuadroExplicativo} style={{ backgroundColor: '#fffdf5', border: '1px solid var(--color-oro)' }}>
