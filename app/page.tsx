@@ -130,35 +130,36 @@ export default function ImproPage() {
     const randomSalt = Math.floor(Math.random() * 9999);
     const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
     
-    const prompt = `
+const prompt = `
 [ROL]
 Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de improvisación.
 
 [MISIÓN]
-Inventa una frase inicial o título único para que los actores arranquen su escena. 
-¡IMPORTANTE! La frase debe estar perfectamente construida en español, tener sentido completo y sonar como algo que diría una persona real en voz alta. Evita palabras sueltas sin conector.
-(ID: ${randomSalt})
+Inventa una frase inicial o título único de 4 a 7 palabras para que los actores arranquen su escena. 
+¡IMPORTANTE! Debe estar en español, tener sentido completo y sonar natural, como algo dicho en voz alta.
 
-[CONTEXTO]
-- Historial de títulos ya jugados en esta sesión: [${historialTitulos}] (Evita repetir chistes, ideas, escenarios o conceptos previos).
+[CONTEXTO / FILTRO ANTI-REPETICIÓN]
+- Historial de títulos ya jugados: [${historialTitulos}]
+- REGLA DE ORO PROHIBIDA: Está terminantemente prohibido usar las estructuras "Me he enterado de...", "Sé lo que...", "Nunca te...", o sinónimos de secretos/engaños familiares. Ya hemos explotado demasiado ese drama en este show. ¡Cambia radicalmente de tema!
 
-[ESTRUCTURA DE SINTAXIS RECOMENDADA]
-Inspírate en estructuras reales como:
-- Una queja o acusación: "Me has vuelto a..." / "Tu hermano siempre..."
-- Una sospecha incómoda: "Creo que el..." / "Sé lo que hiciste con..."
-- Una orden o advertencia: "No toques ese..." / "Saca eso de..."
-- Una confesión surrealista: "Nunca te dije que..." / "Me da miedo tu..."
+[INSPIRACIÓN TEMÁTICA OBLIGATORIA]
+Para romper la monotonía del show, inspírate en una de estas situaciones alternativas:
+- Absurdos laborales: "Tu jefe ha descubierto que..." / "Mañana cerramos la fábrica de..."
+- Situaciones cotidianas rotas: "No debiste meter eso en..." / "El vecino se ha llevado nuestro..."
+- Órdenes extrañas: "Saca ese pingüino del..." / "Llama ahora mismo al..."
+- Confesiones cómicas no dramáticas: "Creo que me he tragado el..." / "Tu gato me mira raro..."
 
 [NIVEL DE EXIGENCIA: ${dificultad.toUpperCase()}]
-- FÁCIL: Comedia cotidiana, problemas domésticos o de pareja.
-- MEDIA: Declaraciones incómodas, secretos destapados o sospechas absurdas.
+- FÁCIL: Comedia cotidiana, problemas domésticos o de oficina.
+- MEDIA: Declaraciones incómodas, obsesiones absurdas o sospechas ridículas.
 - DIFÍCIL: Paradojas divertidas, giros existenciales o locuras poéticas con perfecto sentido.
 
-[REGLAS DE FORMATO CRÍTICAS]
-1. Devuelve ÚNICAMENTE la frase del título. Sin introducciones, sin comillas, sin puntos y sin explicaciones.
-2. Extensión: Entre 4 y 7 palabras.
+[FORMATO CRÍTICO]
+1. Devuelve ÚNICAMENTE la frase. Sin introducciones, sin comillas, sin puntos y sin explicaciones.
 
 Título final:`;
+
+console.log(prompt);
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -199,7 +200,7 @@ Título final:`;
     }
   };
 
-  // 🧠 PIPELINE DE INTELIGENCIA ARTIFICIAL OPTIMIZADO ANTI-ALUCINACIONES
+// 🧠 PIPELINE DE INTELIGENCIA ARTIFICIAL OPTIMIZADO ANTI-ALUCINACIONES
   const procesarEscenaConWhisperYDirector = async (audioBlob: Blob | null) => {
     setLoading(true);
     setPantalla('feedback');
@@ -219,8 +220,8 @@ Título final:`;
       dangerouslyAllowBrowser: true 
     });
 
-    // 🛡️ UMBRAL DE SEGURIDAD (8192 bytes = 8KB). Si pesa menos, es solo ruido estático o silencio absoluto.
-    const TAMAÑO_MINIMO_VOZ = 8192; 
+    // 🛡️ ESCUDO 1: UMBRAL DE SEGURIDAD (12KB). Si el audio dura 20s y pesa menos de esto, es estática o silencio.
+    const TAMAÑO_MINIMO_VOZ = 12288; 
 
     // --- PASO 1: TRANSCRIPCIÓN CON WHISPER ---
     if (audioBlob && audioBlob.size > TAMAÑO_MINIMO_VOZ) {
@@ -232,25 +233,25 @@ Título final:`;
           file: archivoAudio,
           model: 'whisper-large-v3',
           language: 'es',
-          temperature: 0.0, 
-          // Solo le damos estilo e indicaciones de puntuación, no órdenes
+          temperature: 0.0, // Obliga a la mayor precisión posible
           prompt: "Teatro, actuación, improvisación en español con buena puntuación.", 
         });
 
         transcripcionFinal = respuestaWhisper.text?.trim() || '';
 
-        // 🛡️ SEGUNDO ESCUDO: Si Whisper alucina con frases típicas de subtítulos de YouTube por el ruido
-        const frasesAlucinadasComunes = [
-          "subtitulos por", "gracias por ver", "suscríbete", "gracias", 
-          "todos los derechos", "diseño de sonido", "reproducir música"
+        // 🛡️ ESCUDO 2: Filtro estricto de frases típicas que Whisper inventa en el silencio
+        const alucinacionesFrecuentes = [
+          "subtítulos", "gracias por ver", "suscríbete", "gracias", 
+          "todos los derechos", "diseño de sonido", "reproducir música",
+          "teatro, actuación", "buena puntuación" // Evita que repita palabras del propio prompt
         ];
         
-        const contieneAlucinacion = frasesAlucinadasComunes.some(frase => 
+        const contieneBasura = alucinacionesFrecuentes.some(frase => 
           transcripcionFinal.toLowerCase().includes(frase)
         );
 
-        // Si el texto es sospechosamente corto (1 o 2 palabras de cortesía) o contiene alucinaciones, lo vaciamos
-        if (contieneAlucinacion || transcripcionFinal.length < 3) {
+        // Si contiene alucinaciones o es un texto sospechosamente corto (menos de 4 letras), se vacía por completo
+        if (contieneBasura || transcripcionFinal.length < 4) {
           transcripcionFinal = '';
         }
 
@@ -258,7 +259,7 @@ Título final:`;
         console.error("Error al transcribir con Whisper:", whisperError);
       }
     } else {
-      console.log(`Audio descartado por bajo volumen/silencio. Peso: ${audioBlob ? audioBlob.size : 0} bytes`);
+      console.log(`Audio descartado por silencio. Peso: ${audioBlob ? audioBlob.size : 0} bytes`);
     }
 
     setTextoUsuario(transcripcionFinal);
@@ -266,35 +267,42 @@ Título final:`;
 
     // --- PASO 2: FEEDBACK DEL DIRECTOR DE TEATRO ---
     setLoadingTexto('El Director está preparando sus notas...');
-    
-    const promptDirector = `
+
+const promptDirector = `
 [ROL]
-Actúa como un director de teatro de improvisación súper entusiasta, divertido, con mucha energía y jerga teatral alocada.
+Director de teatro de improvisación hiperactivo y sumamente técnico. Hablas con jerga ("¡Arriba el telón!", "¡Puro drama!").
 
-[CONTEXTO DE ENTRADA]
-- Título del ejercicio actual dado por el sistema: "${titulo}"
-- Propuesta improvisada por el alumno en ${tiempoConfig} segundos: "${propuestaFinal}"
+[CONTEXTO]
+- Título de la escena: "${titulo}"
+- Texto dictado por el actor: "${propuestaFinal}"
 
-[INSTRUCCIONES DE EVALUACIÓN (PASO A PASO)]
+[ANÁLISIS LOGICIAL OBLIGATORIO]
+Antes de responder, evalúa mentalmente el texto bajo estas condiciones ultra-flexibles:
+1. Relación: ¿Aparecen roles o vínculos familiares/sociales/laborales? (Ej: "mi mujer", "vecino", "amigo", "jefe", "hermano" SI cuentan como relación).
+2. Ánimo: ¿Se intuye una emoción, duda, miedo o tensión?
+3. Conflicto: ¿Hay un problema, plan, dilema o secreto? (Ej: un secuestro, una sospecha).
+4. Lugar: ¿Se nombra o intuye un espacio físico? (Ej: "el portal", "la casa", "la oficina").
 
-1. CASO CRÍTICO - SI LA PROPUESTA ES "[SIN_RESPUESTA]":
-   El alumno se ha quedado mudo en el escenario. Échale una bronca divertida de director teatral, dile que se ha quedado congelado como una estatua y exígele con energía que vuelva a subir al escenario a intentarlo. Fin.
-
-2. CASO GENERAL - SI EL ALUMNO HA RESPUESTO ALGO DIFERENTE A "[SIN_RESPUESTA]":
-   Analiza su propuesta. Revisa si se intuyen estos 4 pilares: ¿Quiénes son? (Relación), ¿Qué sienten? (Ánimo), ¿Cuál es el problema? (Conflicto) y ¿Dónde están? (Lugar).
-   - Si están los pilares: ¡Celébralo con locura!
-   - Si falta alguno: No critiques. Propón tú un añadido loco e improvisado sobre la marcha para completar la escena.
+[SISTEMA DE RESPUESTA DIRECTA]
+- Si el texto es "[SIN_RESPUESTA]": Lanza una bronca divertida por quedarse congelado como una estatua de cera.
+- Si SÍ respondió: Lanza una crítica veloz en primera persona (desde la fila 5). Menciona los pilares logrados. Si falta alguno, nómbralo sin rodeos y aporta un giro surrealista para completarlo. ¡Si lo logró todo, monta una fiesta teatral!
 
 [REGLAS DE FORMATO ABSOLUTAS]
-- Devuelve ÚNICAMENTE el comentario directo del director en primera persona. 
-- Prohibido incluir introducciones, saludos, despedidas, comillas o textos de relleno.
-- Extensión máxima: 4 frases cortas (máximo 45 palabras en total). ¡Puro ritmo de comedia!`;
+- Estructura obligatoria: 1 Frase de jerga inicial + 1 o 2 Frases evaluando las metas + 1 Frase de cierre/giro loco.
+- 🚨 REGLA DE AUTO-FRENO: No te extiendas en explicaciones detalladas. Sé ultra-corto. Si ves que vas a escribir más de 45 palabras, DETÉNTE inmediatamente, cierra la idea de golpe y corta la respuesta de forma limpia. Es preferible un veredicto breve que una frase cortada a la mitad.
+- Prohibido saludar, usar comillas o introducciones corporativas.
+
+[EJEMPLO DE SALIDA COMPACTA ESPERADA]
+¡Arriba el telón! Clavaste la relación de pareja con el vecino, el conflicto del secuestro y el portal como lugar, pero me faltó unánimidad en el Ánimo. ¡Para la próxima ponle más terror al asunto! ¡A escena de nuevo!
+
+Veredicto del Director:`;
 
     try {
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: promptDirector }],
-        max_tokens: 80,
+        max_tokens: 180, 
+        temperature: 0.8, 
       });
 
       const nuevoFeedback = response.choices[0]?.message?.content?.trim() || '¡Buena improvisación!';
@@ -307,7 +315,6 @@ Actúa como un director de teatro de improvisación súper entusiasta, divertido
       setLoadingTexto('');
     }
   };
-
   const clickBotonTerminarManual = () => {
     esBotonFinalizarRef.current = true;
     detenerGrabacionYProcesar();
