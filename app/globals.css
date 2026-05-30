@@ -309,6 +309,9 @@ select {
 .btn-repetir { background-color: #2980b9; color: white; }
 .btn-repetir:hover { background-color: #2471a3; }
 
+.btn-reiniciar { background-color: #b92929; color: white; }
+.btn-reiniciar:hover { background-color: #a32424; }
+
 /* 10. ANIMACIONES */
 @keyframes pulso-microfono {
   0% { transform: scale(1); }
