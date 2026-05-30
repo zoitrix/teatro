@@ -509,57 +509,72 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
             </div>
             
             <br/>
-            
             {/* Todos los controles agrupados dentro del mismo bloque .controles-group original */}
-            <div className="controles-group">
-              <label>Dificultad
-                <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
-                  <option value="fácil">Fácil (Cotidiano)</option>
-                  <option value="media">Media (Interesante)</option>
-                  <option value="difícil">Difícil (Locura)</option>
-                </select>
-              </label>
+<div className="controles-group" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+  
+  {/* Fila superior: Selector de dificultad a ancho completo */}
+  <label style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+    Dificultad
+    <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
+      <option value="fácil">Fácil (Cotidiano)</option>
+      <option value="media">Media (Interesante)</option>
+      <option value="difícil">Difficult (Locura)</option>
+    </select>
+  </label>
 
-              <label>Planteamiento (Intro)
-                <input 
-                  type="number" 
-                  className="input-tiempo-number"
-                  value={tiemposConfig.intro} 
-                  min={1} max={300}
-                  onChange={(e) => handleTiempoChange('intro', Number(e.target.value))}
-                />
-              </label>
+  {/* Sub-rejilla: 2 columnas para que los timers ocupen solo 2 filas en total */}
+  <div style={{ 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', 
+    gap: '12px', 
+    width: '100%' 
+  }}>
+    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+      <span>⏱️ Inicio</span>
+      <input 
+        type="number" 
+        className="input-tiempo-number"
+        value={tiemposConfig.intro} 
+        min={1} max={300}
+        onChange={(e) => handleTiempoChange('intro', Number(e.target.value))}
+      />
+    </label>
 
-              <label>Primer Giro (Giro 1)
-                <input 
-                  type="number" 
-                  className="input-tiempo-number"
-                  value={tiemposConfig.giro1} 
-                  min={1} max={300}
-                  onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))}
-                />
-              </label>
+    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+      <span>⚡ 1er Giro</span>
+      <input 
+        type="number" 
+        className="input-tiempo-number"
+        value={tiemposConfig.giro1} 
+        min={1} max={300}
+        onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))}
+      />
+    </label>
 
-              <label>Segundo Giro (Giro 2)
-                <input 
-                  type="number" 
-                  className="input-tiempo-number"
-                  value={tiemposConfig.giro2} 
-                  min={1} max={300}
-                  onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))}
-                />
-              </label>
+    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+      <span>🔥 2do Giro</span>
+      <input 
+        type="number" 
+        className="input-tiempo-number"
+        value={tiemposConfig.giro2} 
+        min={1} max={300}
+        onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))}
+      />
+    </label>
 
-              <label>Desenlace Final
-                <input 
-                  type="number" 
-                  className="input-tiempo-number"
-                  value={tiemposConfig.desenlace} 
-                  min={1} max={300}
-                  onChange={(e) => handleTiempoChange('desenlace', Number(e.target.value))}
-                />
-              </label>
-            </div>
+    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+      <span>🏁 Desenlace</span>
+      <input 
+        type="number" 
+        className="input-tiempo-number"
+        value={tiemposConfig.desenlace} 
+        min={1} max={300}
+        onChange={(e) => handleTiempoChange('desenlace', Number(e.target.value))}
+      />
+    </label>
+  </div>
+
+</div>
 
             <button className="btn-teatro btn-comenzar" style={{ marginTop: '25px' }} onClick={iniciarEjercicio} disabled={loading}>
               {loading ? 'Afinando el libreto...' : '¡Subir el Telón! 🚀'}
