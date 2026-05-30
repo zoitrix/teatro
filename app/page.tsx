@@ -31,59 +31,65 @@ export default function ImproPage() {
   const esBotonFinalizarRef = useRef<boolean>(false);
   const deberiaEstarGrabandoRef = useRef<boolean>(false);
 
-  // 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ (Único para PC y Móvil)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true; 
-      recognition.lang = 'es-ES';
+// 🎙️ CONFIGURACIÓN DEL RECONOCIMIENTO DE VOZ REPARADO ANTI-DUPLICACIÓN
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+  
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true; 
+    recognition.lang = 'es-ES';
 
-      recognition.onresult = (event: any) => {
-        let fraseActualProvisional = '';
+    recognition.onresult = (event: any) => {
+      let textoFinalProcesado = '';
+      let textoIntermedioProvisional = '';
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            // Si el fragmento es definitivo, lo consolidamos en el acumulador de inmediato
-            textoAcumuladoRef.current = (textoAcumuladoRef.current + ' ' + event.results[i][0].transcript).trim();
-          } else {
-            fraseActualProvisional += event.results[i][0].transcript;
-          }
-        }
-
-        // Mostramos en pantalla el histórico consolidado + lo que está procesando ahora mismo
-        const textoCompleto = (textoAcumuladoRef.current + ' ' + fraseActualProvisional).trim();
-        const textoLimpio = textoCompleto.replace(/\s+/g, ' ');
-        
-        setTextoUsuario(textoLimpio);
-      };
-
-      recognition.onerror = (event: any) => {
-        if (event.error !== 'aborted' && event.error !== 'no-speech') {
-          console.error("Error en el micrófono:", event.error);
-        }
-      };
-
-      recognition.onend = () => {
-        // 🔥 SISTEMA ANTI-CORTE: Si el navegador apaga el micro por silencio pero seguimos jugando, lo reactivamos
-        if (deberiaEstarGrabandoRef.current) {
-          try {
-            recognitionRef.current.start();
-          } catch (e) {
-            console.log("Reintentando encendido de micrófono...");
-          }
+      // Recorremos SIEMPRE desde el inicio (0) para dejar que el motor nativo organice las frases limpias
+      for (let i = 0; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          textoFinalProcesado += transcript + ' ';
         } else {
-          setEscuchando(false);
+          textoIntermedioProvisional += transcript;
         }
-      };
+      }
 
-      recognitionRef.current = recognition;
-    }
-  }, []); 
+      // Combinamos el texto que ya es definitivo con el que se está diciendo en el milisegundo actual
+      const textoCompleto = (textoFinalProcesado + textoIntermedioProvisional).trim();
+      
+      // Limpieza profunda de espacios dobles provocados por los saltos de micro
+      const textoLimpio = textoCompleto.replace(/\s+/g, ' ');
+      
+      // Actualizamos la REF (fuente de verdad para Groq) y el ESTADO (fuente de verdad para la pantalla) al mismo tiempo
+      textoAcumuladoRef.current = textoLimpio;
+      setTextoUsuario(textoLimpio);
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        console.error("Error en el micrófono:", event.error);
+      }
+    };
+
+    recognition.onend = () => {
+      // Sistema anti-corte: Si el navegador apaga el micro por silencio pero seguimos jugando, lo reactivamos
+      if (deberiaEstarGrabandoRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          console.log("Reintentando encendido de micrófono...");
+        }
+      } else {
+        setEscuchando(false);
+      }
+    };
+
+    recognitionRef.current = recognition;
+  }
+}, []);
 
   // ⏱️ TEMPORIZADOR Y CONTROLADOR DE FLUJO
   useEffect(() => {
