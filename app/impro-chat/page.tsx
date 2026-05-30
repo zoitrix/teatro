@@ -9,12 +9,12 @@ interface MensajeChat {
   content: string;
 }
 
-type FaseActo = 'intro' | 'giro1' | 'giro2' | 'desenlace';
+// 🎭 1. Simplificación a 3 Estados Clásicos
+type FaseActo = 'intro' | 'nudo' | 'desenlace';
 
 interface TiemposConfig {
   intro: number;
-  giro1: number;
-  giro2: number;
+  nudo: number;
   desenlace: number;
 }
 
@@ -26,25 +26,32 @@ interface EvaluacionActo {
 
 interface InformeDirector {
   intro: EvaluacionActo | null;
-  giro1: EvaluacionActo | null;
-  giro2: EvaluacionActo | null;
+  nudo: EvaluacionActo | null;
   desenlace: EvaluacionActo | null;
 }
 
 export default function ImproChatPage() {
   const [dificultad, setDificultad] = useState<string>('media');
+  
+  // ⏱️ Ajuste de tiempos por defecto para los 3 actos
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>({
     intro: 60,
-    giro1: 120,
-    giro2: 120,
+    nudo: 240, // Suma del tiempo anterior o el que consideres ideal
     desenlace: 60
   });
+
+  const dectectorVozRef = useRef<{
+    audioContext: AudioContext | null;
+    analyser: AnalyserNode | null;
+    intervalo: NodeJS.Timeout | null;
+    habloAlMenosUnaVez: boolean;
+  }>({ audioContext: null, analyser: null, intervalo: null, habloAlMenosUnaVez: false });
 
   const [pantalla, setPantalla] = useState<'config' | 'jugando' | 'final'>('config');
   const [faseActual, setFaseActual] = useState<FaseActo>('intro');
   const [titulo, setTitulo] = useState<string>('');
   const [historialLetra, setHistorialLetra] = useState<MensajeChat[]>([]);
-    const [titulos, setTitulos] = useState<string[]>([]);
+  const [titulos, setTitulos] = useState<string[]>([]);
   
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingTexto, setLoadingTexto] = useState<string>('');
@@ -54,8 +61,7 @@ export default function ImproChatPage() {
 
   const [informeFinal, setInformeFinal] = useState<InformeDirector>({
     intro: null,
-    giro1: null,
-    giro2: null,
+    nudo: null,
     desenlace: null
   });
 
@@ -93,6 +99,16 @@ export default function ImproChatPage() {
     };
   }, []);
 
+  // 📡 PRECARGA DE VOCES NATURALES DEL SISTEMA
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
+
   const liberarMicrofono = () => {
     if (flujoAudioRef.current) {
       flujoAudioRef.current.getTracks().forEach(track => track.stop());
@@ -114,47 +130,155 @@ export default function ImproChatPage() {
       }
       flujoAudioRef.current = stream;
 
-      const mediaRecorder = new MediaRecorder(stream);
+      const opciones = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, opciones);
       mediaRecorderRef.current = mediaRecorder;
+      
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) fragmentosAudioRef.current.push(e.data);
+        if (e.data && e.data.size > 0) {
+          fragmentosAudioRef.current.push(e.data);
+        }
       };
 
-      mediaRecorder.start(250);
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+
+      dectectorVozRef.current = {
+        audioContext,
+        analyser,
+        habloAlMenosUnaVez: false,
+        intervalo: setInterval(() => {
+          const bufferDatos = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(bufferDatos);
+          
+          const promedioVolumen = bufferDatos.reduce((a, b) => a + b, 0) / bufferDatos.length;
+          
+          if (promedioVolumen > 10) {
+            dectectorVozRef.current.habloAlMenosUnaVez = true;
+          }
+        }, 100)
+      };
+
+      mediaRecorder.start();
       setEscuchando(true);
       setIaHablando(false);
     } catch (error) {
-      console.error(error);
+      console.error("Error al iniciar grabación con VAD:", error);
     }
   };
 
-  const detenerGrabacionYProcesar = () => {
+  const detenerGrabacionYProcesar = async () => {
     if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
       return;
     }
+    
     setEscuchando(false);
-    mediaRecorderRef.current.onstop = async () => {
-      const audioBlob = new Blob(fragmentosAudioRef.current, { type: 'audio/mpeg' });
-      await procesarTurnoConversacional(audioBlob);
+    const mimeTypeUsado = mediaRecorderRef.current.mimeType;
+
+    const { audioContext, intervalo, habloAlMenosUnaVez } = dectectorVozRef.current;
+    if (intervalo) clearInterval(intervalo);
+    if (audioContext && audioContext.state !== 'closed') audioContext.close();
+
+    const obtenerBlobAudio = () => {
+      return new Promise<Blob | null>((resolve) => {
+        if (!mediaRecorderRef.current) return resolve(null);
+
+        mediaRecorderRef.current.onstop = () => {
+          if (fragmentosAudioRef.current.length === 0) {
+            return resolve(null);
+          }
+
+          const audioBlob = new Blob(fragmentosAudioRef.current, { type: mimeTypeUsado });
+
+          if (audioBlob.size < 1200) {
+            return resolve(null);
+          }
+
+          if (habloAlMenosUnaVez || audioBlob.size > 3500) {
+            resolve(audioBlob);
+          } else {
+            resolve(null);
+          }
+        };
+        
+        mediaRecorderRef.current.stop();
+      });
     };
-    mediaRecorderRef.current.stop();
+
+    const audioBlobListo = await obtenerBlobAudio();
+    fragmentosAudioRef.current = []; 
+
+    await procesarTurnoConversacional(audioBlobListo);
   };
 
-  const reproducirVozIA = (texto: string, callbackAlTerminar: () => void) => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel(); 
-      const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = 'es-ES';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.onend = () => { setIaHablando(false); callbackAlTerminar(); };
-      utterance.onerror = () => { setIaHablando(false); callbackAlTerminar(); };
-      setIaHablando(true);
-      setEscuchando(false);
-      window.speechSynthesis.speak(utterance);
-    } else {
+  const reproducirVozIA = async (texto: string, callbackAlTerminar: () => void) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      console.warn("SpeechSynthesis no está soportado.");
       callbackAlTerminar();
+      return;
     }
+
+    window.speechSynthesis.cancel();
+    setIaHablando(true);
+    setEscuchando(false);
+
+    const obtenerVozHumanaSinHelena = (): SpeechSynthesisVoice | null => {
+      const voces = window.speechSynthesis.getVoices();
+      if (voces.length === 0) return null;
+
+      const vocesPermitidas = voces.filter(v => 
+        v.lang.startsWith('es') && !v.name.toLowerCase().includes('helena')
+      );
+
+      const premium = vocesPermitidas.find(v => 
+        v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')
+      );
+      if (premium) return premium;
+
+      const alternativaLocal = vocesPermitidas.find(v => 
+        v.name.includes('Mónica') || v.name.includes('Jorge') || v.name.includes('Microsoft')
+      );
+      if (alternativaLocal) return alternativaLocal;
+
+      return vocesPermitidas[0] ?? null;
+    };
+
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(texto);
+      const vozElegida = obtenerVozHumanaSinHelena();
+
+      if (vozElegida) {
+        utterance.voice = vozElegida;
+        utterance.lang = vozElegida.lang;
+      } else {
+        utterance.lang = 'es-ES';
+      }
+
+      utterance.rate = 1.15;  
+      utterance.pitch = 1.0;  
+
+      utterance.onend = () => {
+        setIaHablando(false);
+        callbackAlTerminar();
+      };
+
+      utterance.onerror = (e) => {
+        console.error("Error en síntesis de voz:", e);
+        setIaHablando(false);
+        callbackAlTerminar();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }, 60);
   };
 
   const iniciarEjercicio = async () => {
@@ -173,11 +297,11 @@ export default function ImproChatPage() {
     setFaseActual('intro');
     textoAcumuladoActoRef.current = [];
     setUltimoFeedbackFijo(null);
-    setInformeFinal({ intro: null, giro1: null, giro2: null, 'desenlace': null });
+    setInformeFinal({ intro: null, nudo: null, desenlace: null });
 
     const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
 
-const promptTitulo = `
+    const promptTitulo = `
 [ROL]
 Eres un espectador real, gamberro, divertido y muy espontáneo en un show de comedia de improvisación teatral. Estás entre el público y gritas una frase ingeniosa para que los actores arranquen su escena desde una situación estimulante.
 
@@ -197,31 +321,26 @@ Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras e
 🚨 REGLA DE ORO: No repitas conceptos, entornos ni palabras clave del historial. Si ya se usó una temática, salta a otra completamente distinta.
 
 🚨 FILTRO DE CONTENIDO:
-Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
+Nada de dramas oscuros, tragedies ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
 
 [MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
 Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ejemplos reales:
 
 - FÁCIL (Enredos cotidianos y órdenes directas):
-  * "¡Saca inmediatamente ese pato del coche!" (Una orden loca)
-  * "Mañana cerramos la fábrica de almohadas" (Una noticia bomba)
-  * "¿Quién ha metido los pantalones en el lavavajillas?" (Una bronca doméstica)
-  * "Por favor, devuélveme mis cejas postizas" (Una súplica ridícula)
+  * "¡Saca inmediatamente ese pato del coche!"
+  * "Mañana cerramos la fábrica de almohadas"
+  * "¿Quién ha metido los pantalones en el lavavajillas?"
 
 - MEDIA (Chismes, sospechas y situaciones incómodas):
-  * "Creo que el televisor nos está mintiendo" (Una sospecha absurda - ¡"mintiendo" con I!)
-  * "No debiste darle café a ese maniquí" (Un reproche divertido)
-  * "Ayer me persiguió un semáforo con prisa" (Una anécdota loca)
-  * "¿Desde cuándo los espaguetis tienen opiniones políticas?" (Una duda ridícula)
+  * "Creo que el televisor nos está mintiendo"
+  * "No debiste darle café a ese maniquí"
 
 - DIFÍCIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
-  * "Si parpadeas, el pasillo se hace largo" (Una advertencia misteriosa)
-  * "Cuidado con los tomates, huelen el miedo" (Un peligro absurdo)
-  * "Tu doble de acción está cobrando más que tú" (Un chisme de camerinos)
-  * "Creo que nos está vigilando el panadero" (Una paranoia divertida)
+  * "Si parpadeas, el pasillo se hace largo"
+  * "Cuidado con los tomates, huelen el miedo"
 
 [CONTROL DE CALIDAD FINAL - ANTES DE CONTESTAR]
-Revisa tu frase antes de soltarla: ¿Las palabras existen y están bien escritas en castellano? ¿Suena natural? ¿La gritaría alguien del público en un teatro para reírse? ¿Tiene entre 4 y 7 palabras? Si suena a poesía o tiene dudas ortográficas, bórrala y genera otra.
+Revisa tu frase antes de soltarla.
 
 [FORMATO DE SALIDA CRÍTICO]
 Devuelve ÚNICAMENTE las palabras de la frase. 
@@ -260,26 +379,53 @@ Frase final:`;
     if (pantallaRef.current !== 'jugando') return;
     setLoading(true);
     setLoadingTexto('Procesando réplica...');
-    let transcripcionUsuario = '';
 
     const apiKey = process.env.NEXT_PUBLIC_API_KEY;
     if (!apiKey) { setLoading(false); iniciarGrabacionNativa(); return; }
     const groq = new OpenAI({ apiKey, baseURL: "https://api.groq.com/openai/v1", dangerouslyAllowBrowser: true });
 
-    if (audioBlob && audioBlob.size > 4000) {
+    let transcripcionUsuario = "";
+
+    if (audioBlob) {
       try {
-        const archivoAudio = new File([audioBlob], "impro.mp3", { type: 'audio/mp3' });
+        let tipoLimpio = audioBlob.type.split(';')[0]; 
+        let extension = tipoLimpio.includes('mp4') || tipoLimpio.includes('m4a') ? 'm4a' : 'webm';
+        const archivoAudio = new File([audioBlob], `impro.${extension}`, { type: tipoLimpio });
+        
         const respuestaWhisper = await groq.audio.transcriptions.create({
-          file: archivoAudio, model: 'whisper-large-v3', language: 'es', temperature: 0.0,
+          file: archivoAudio, 
+          model: 'whisper-large-v3', 
+          language: 'es', 
+          temperature: 0.0,
+          prompt: "." 
         });
-        transcripcionUsuario = respuestaWhisper.text?.trim() || '';
-      } catch (err) { console.error(err); }
+        
+        let textoCrudo = respuestaWhisper.text?.trim() || '';
+        
+        const esAlucinacionAudio = (texto: string) => {
+          const normalizado = texto.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?¡¿]/g, "").trim();
+          const patronesFantasmas = [
+            /^gracias$/, /^gracias por ver$/, /^gracias por ver el video$/, 
+            /^subtitulos$/, /^subtitulado$/, /^reproduccion$/, /^amén$/, 
+            /^oiga$/, /^mira$/, /^reproducir$/, /^por ver$/, /^todos$/
+          ];
+          if (normalizado.length <= 2) return true;
+          return patronesFantasmas.some(rx => rx.test(normalizado));
+        };
+
+        if (esAlucinacionAudio(textoCrudo)) {
+          transcripcionUsuario = "";
+        } else {
+          transcripcionUsuario = textoCrudo;
+        }
+
+      } catch (err) { 
+        console.error("Error en Whisper:", err); 
+      }
     }
 
-    if (!transcripcionUsuario) {
-      setLoading(false);
-      if (pantallaRef.current === 'jugando') iniciarGrabacionNativa();
-      return;
+    if (!transcripcionUsuario || transcripcionUsuario.trim() === "") {
+      transcripcionUsuario = "[SIN_RESPUESTA]";
     }
 
     textoAcumuladoActoRef.current.push(transcripcionUsuario);
@@ -291,10 +437,27 @@ Frase final:`;
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [
-          { role: 'system', content: `Eres un actor de improvisación teatral rápido y cómico. Estamos en el acto de ${faseActualRef.current.toUpperCase()} de la obra titulada "${titulo}". Responde directamente al usuario siguiendo el juego dramático. Devuelve SOLO tu línea de diálogo limpia (máximo 20 palabras), sin acotaciones ni paréntesis.` },
+          { 
+            role: 'system', 
+            content: `Eres un actor de improvisación teatral de élite, rápido, cómico y con gran agilidad mental. 
+Estamos en pleno escenario, interpretando el acto de ${faseActualRef.current.toUpperCase()} de la obra titulada "${titulo}".
+
+Tu objetivo es mantener viva la escena co-creando con el usuario. Para ello, debes seguir a rajatabla las REGLAS DE ORO DE LA IMPROVISACIÓN:
+
+1. El Mantra del "Sí, y...": Acepta inmediatamente como verdad absoluta todo lo que el usuario proponga. Jamás le contradigas, niegues o bloquees su narrativa. Construye sobre su idea aportando un elemento nuevo que haga avanzar la historia.
+2. Escucha Activa y Presente: Analiza la última réplica del usuario, su tono y su emoción. Responde directamente a lo que acaba de suceder en este preciso instante.
+3. Servicio al Compañero: Tu misión es hacer lucir bien al usuario. Adapta tu energía a la suya para elevar la escena juntos.
+4. Abraza el Error: Si el usuario dice un sinsentido o se queda en silencio (como un bloqueo expresado en '[SIN_RESPUESTA]'), incorpóralo de manera brillante y divertida.
+5. Confianza Espontánea: Sé directo y reacciona sin sobreanalizar.
+
+⚠️ REGLAS ESTRICTAS DE FORMATO:
+- Devuelve ÚNICAMENTE tu línea de diálogo limpia.
+- Máximo 20 palabras. Sé extremadamente conciso y directo.
+- Está TERMINANTEMENTE PROHIBIDO incluir acotaciones, paréntesis, asteriscos, emociones escritas o indicaciones escénicas. Solo texto hablado.` 
+          },
           ...nuevoHistorial
         ],
-        temperature: 0.8,
+        temperature: 0.85,
         max_tokens: 60,
       });
 
@@ -314,6 +477,7 @@ Frase final:`;
     }
   };
 
+  // 🔄 2. Transiciones de la Máquina de Estados (De 4 saltos a 3)
   const avanzarFaseEstructural = () => {
     const faseTerminada = faseActual;
     const textoDelActo = textoAcumuladoActoRef.current.join(' ');
@@ -323,36 +487,33 @@ Frase final:`;
     textoAcumuladoActoRef.current = [];
 
     if (faseTerminada === 'intro') {
-      setFaseActual('giro1');
-      setTimeLeft(tiemposConfig.giro1);
+      setFaseActual('nudo');
+      setTimeLeft(tiemposConfig.nudo);
       iniciarGrabacionNativa();
-    } else if (faseTerminada === 'giro1') {
-      setFaseActual('giro2');
-      setTimeLeft(tiemposConfig.giro2);
-      iniciarGrabacionNativa();
-    } else if (faseTerminada === 'giro2') {
+    } else if (faseTerminada === 'nudo') {
       setFaseActual('desenlace');
       setTimeLeft(tiemposConfig.desenlace);
       iniciarGrabacionNativa();
     } else if (faseTerminada === 'desenlace') {
       finalizarFuncionYMostrarInforme();
     }
+  };
+  
+  // 📋 3. Reconfiguración de los Criterios de Evaluación del Director
+  const ejecutarEvaluacionDirectorEnBackstage = async (fase: FaseActo, textoActor: string) => {
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    if (!apiKey || apiKey.trim() === "") {
+      console.error("Falta la API Key para la evaluación.");
+      return;
+    }
     
-  };const ejecutarEvaluacionDirectorEnBackstage = async (fase: FaseActo, textoActor: string) => {
-  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-  if (!apiKey || apiKey.trim() === "") {
-    console.error("Falta la API Key para la evaluación.");
-    return;
-  }
-  
-  // 🔽 CONFIGURACIÓN CAMBIADA PARA EVITAR EL BUG DE URL 🔽
-  const groq = new OpenAI({ 
-    apiKey: apiKey.trim(), 
-    baseURL: "https://api.groq.com/openai/v1", 
-    dangerouslyAllowBrowser: true 
-  });
-  
-  const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
+    const groq = new OpenAI({ 
+      apiKey: apiKey.trim(), 
+      baseURL: "https://api.groq.com/openai/v1", 
+      dangerouslyAllowBrowser: true 
+    });
+    
+    const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
 
     let consignasEspecificas = '';
     if (faseActual === 'intro') {
@@ -360,53 +521,55 @@ Frase final:`;
 - Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>. El título es fijo y no se juzga.
 - Para otorgar "aprobado": true, el actor debe haber propuesto una premisa, acción, personaje o conflicto que guarde una relación lógica, cómica o temática con el título "${titulo}".
 - No exijas genialidad artística: si el texto continúa, expande o se inspira coherentemente en el universo del título, dalo por bueno.
-
-🚨 REGLA DE RECHAZO CRÍTICA:
-- Si el usuario evade el título por completo, dice sinsentidos inconexos, palabras sueltas o un saludo básico (ej: "hola", "buenas", "¡sube el telón!"), debes poner "aprobado": false de inmediato.`;
+🚨 REGLA DE RECHAZO CRÍTICA: Si el usuario evade el título por completo, dice sinsentidos inconexos o un saludo básico, debes poner "aprobado": false de inmediato.`;
       
-    } else if (faseActual === 'giro1') {
-      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
-- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
-- El actor debe introducir un PRIMER PUNTO DE GIRO (un imprevisto, secreto o revelación repentina) que altere directamente el rumbo de la introducción previa.
-- Verifica si la propuesta reacciona al contexto dramático heredado. Si es un saludo, texto vacío o una evasión sin relación, "aprobado" DEBE ser false.`;
-      
-    } else if (faseActual === 'giro2') {
-      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
-- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
-- El actor debe sumar un SEGUNDO PUNTO DE GIRO (añadir más presión, peligro, complicación extrema o un factor contrarreloj) sobre lo que ya ocurrió en la Intro y el Giro 1 .
-- Si el texto está vacío, es inconexo o no añade ninguna complicación a la narrativa previa, "aprobado" DEBE ser false.`;
+    } else if (faseActual === 'nudo') {
+      // ⚡ COMBINACIÓN DE LOS DOS PUNTOS DE GIRO EN EL NUDO
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN DEL NUDO:
+- Analiza minuciosamente todo el bloque del libreto en este acto.
+- CRITERIO CRÍTICO EXIGIDO: El actor debe haber introducido o reaccionado dinámicamente a DOS PUNTOS DE GIRO DISTINTOS durante este bloque. 
+  * GIRO 1: Una revelación, secreto, imprevisto o cambio repentino de dirección sobre lo planteado en la introducción.
+  * GIRO 2: Un incremento de la complicación, factor contrarreloj, amenaza absurda o elemento límite de presión que vuelva caótico el conflicto.
+- Para otorgar "aprobado": true, debes ver reflejada en la interacción del actor esta doble evolución en la trama. Si la escena se estancó de forma plana en un solo chiste, repite la introducción o carece de estos giros, debes poner "aprobado": false.`;
       
     } else if (faseActual === 'desenlace') {
       consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
 - Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
-- El actor debe dar un cierre o resolución final, idealmente divertido o inesperado, que concluya la cadena de eventos previos (Intro y Giros:).
+- El actor debe dar un cierre o resolución final, idealmente divertido o inesperado, que concluya la cadena de eventos previos.
 - Si el texto carece de sustancia resolutiva o corta la escena abruptamente sin cerrar nada, "aprobado" DEBE ser false.`;
     }
 
+    const libretoDelActo = historialLetra
+      .map(m => `${m.role === 'user' ? 'ACTOR (Usuario)' : 'CO-ACTOR (IA)'}: ${m.content}`)
+      .join('\n');
+
     const promptDirector = `
-[ROL]
-Eres un Director de teatro de improvisación hiperactivo, técnico, apasionado y muy exigente. Hablas siempre utilizando jerga teatral ("¡Arriba el telón!", "¡Falta ritmo!", "¡Puro drama!", "¡Eso es actuar!").
+        [ROL]
+        Eres un Director de teatro de improvisación hiperactivo, técnico, apasionado y muy exigente. Hablas siempre utilizando jerga teatral ("¡Arriba el telón!", "¡Falta ritmo!", "¡Puro drama!", "¡Eso es actuar!").
 
-[MISIÓN DE ANÁLISIS]
-Tu único trabajo es juzgar si el <texto_del_actor> cumple con el objetivo técnico del acto actual. El título y el historial son contextos fijos para medir la coherencia; ESTÁ PROHIBIDO evaluar si el título es creativo o lo que aporta. Juzga al ACTOR, no al escenario.
+        [MISIÓN DE ANÁLISIS]
+        Tu único trabajo es juzgar si el desempeño del ACTOR (Usuario) dentro del transcurso del acto cumple con el objetivo técnico solicitado. 
 
-[CONSIGNAS ESPECÍFICAS PARA ESTE ACTO]
-${consignasEspecificas}
+        Evalúa su coherencia, su capacidad de propuesta y su adaptación al juego dramático basándote en el [LIBRETO REAL DEL ACTO] provisto abajo. El título y el hilo conversacional son contextos fijos para medir su rendimiento. Juzga al ACTOR, no al escenario.
 
-[DATOS DE ENTRADA DE LA ESCENA]
-<titulo_escena_context>${titulo}</titulo_escena_context>
-<texto_del_actor>${propuestaFinal}</texto_del_actor>
+        [CONSIGNAS ESPECÍFICAS PARA ESTE ACTO]
+        ${consignasEspecificas}
 
-🚨 [REGLA INQUEBRANTABLE DE MUTISMO]
-- Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false de manera matemática. Lanza una bronca divertida por quedarse congelado o hacer un mutismo.
-- Si hay cualquier otra propuesta escrita, ignora esta regla de mutismo y evalúala bajo los criterios normales detallados arriba.
+        [DATOS DE ENTRADA DE LA ESCENA]
+        <titulo_escena_context>${titulo}</titulo_escena_context>
 
-[FORMATO DE SALIDA ESTRICTO]
-Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
-{
-  "aprobado": true o false,
-  "comentario": "Tu crítica teatral..."
-}`;
+        [LIBRETO REAL DEL ACTO]
+        ${libretoDelActo || 'El actor no ha intervenido.'}
+
+        🚨 [REGLA INQUEBRANTABLE DE MUTISMO]
+        - Si el ACTOR (Usuario) no tiene ninguna línea registrada en el libreto o solo el texto "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false de manera matemática. Lanza una bronca divertida por quedarse congelado.
+
+        [FORMATO DE SALIDA ESTRICTO]
+        Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
+        {
+        "aprobado": true o false,
+        "comentario": "Tu crítica teatral breve de máximo 35 palabras utilizando tu jerga, validando objetivamente por qué la propuesta del actor funciona con el co-actor y el título, o detallando qué faltó."
+    }`;
 
     try {
       const response = await groq.chat.completions.create({
@@ -414,7 +577,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
         messages: [{ role: 'user', content: promptDirector }],
         temperature: 0.1,
         max_tokens: 150,
-        // ✨ FUERZA EL MODO JSON NATIVO EN GROQ ✨
         response_format: { type: "json_object" } 
       });
 
@@ -422,11 +584,9 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
       
       let resultado;
       try {
-        // Al usar response_format, el texto viene limpio en un 99.9% de los casos
         resultado = JSON.parse(textoCrudo);
       } catch (parseError) {
-        console.warn("Fallo el parseo directo, intentando limpiar el JSON...", parseError);
-        // Fallback por si acaso vienen caracteres raros alrededor del JSON
+        console.warn("Falló el parseo directo, intentando limpiar el JSON...", parseError);
         const inicioJson = textoCrudo.indexOf('{');
         const finJson = textoCrudo.lastIndexOf('}');
         if (inicioJson !== -1 && finJson !== -1) {
@@ -437,6 +597,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
         }
       }
 
+      const nombresLegibles: Record<string, string> = { intro: 'Acto I (Intro)', nudo: 'Acto II (Nudo: Dos Giros)', desenlace: 'Acto III (Desenlace)' };
+
       setInformeFinal(prev => ({
         ...prev,
         [fase]: {
@@ -446,7 +608,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
         }
       }));
 
-      const nombresLegibles: Record<string, string> = { intro: 'Acto I (Intro)', giro1: 'Acto II (1er Giro)', giro2: 'Acto III (2do Giro)', desenlace: 'Acto IV (Desenlace)' };
       setUltimoFeedbackFijo({
         fase: nombresLegibles[fase] || fase.toUpperCase(),
         texto: resultado.comentario || 'Ritmo de escena adecuado.',
@@ -455,7 +616,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
 
     } catch (e) {
       console.error("Error evaluando acto en backstage:", e);
-      // 🛡️ CONTROL DE DAÑOS: Si la IA explota, la app continúa y no se congela
       setInformeFinal(prev => ({
         ...prev,
         [fase]: {
@@ -485,13 +645,12 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
     setEscuchando(false);
   };
 
-  // 💐 PANTALLA 3: RESUMEN FINAL CON DIÁLOGO COMPLETO
+  // 🎨 4. Renderizado de Pantalla de Feedback Final
   if (pantalla === 'final') {
     const actos = [
       { id: 'intro', nombre: 'Acto I: Introducción' },
-      { id: 'giro1', nombre: 'Acto II: Primer Giro' },
-      { id: 'giro2', nombre: 'Acto III: Segundo Giro' },
-      { id: 'desenlace', nombre: 'Acto IV: Desenlace Final' }
+      { id: 'nudo', nombre: 'Acto II: Nudo (Doble Giro)' },
+      { id: 'desenlace', nombre: 'Acto III: Desenlace Final' }
     ];
 
     const aprobadosTotales = actos.every(acto => informeFinal[acto.id as FaseActo]?.aprobado === true);
@@ -509,7 +668,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
               <h2>OBRA: {titulo}</h2>
             </div>
 
-            {/* 📖 SECCIÓN NUEVA: EL GUION COMPLETO DE LA OBRA */}
             <h3 style={{ borderBottom: '2px solid var(--color-telon)', paddingBottom: '5px', color: 'var(--color-telon)' }}>📖 Libreto Completo de la Función</h3>
             <div style={{ 
               backgroundColor: '#fdfbf7', 
@@ -530,13 +688,12 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
                     <strong style={{ color: m.role === 'user' ? '#2980b9' : '#c0392b' }}>
                       {m.role === 'user' ? '👤 Tú: ' : '🤖 Co-Actor: '}
                     </strong>
-                    {m.content}
+                    {m.content === "[SIN_RESPUESTA]" ? "..." : m.content}
                   </p>
                 ))
               )}
             </div>
 
-            {/* 📋 EVALUACIÓN POR ACTOS */}
             <h3 style={{ borderBottom: '2px solid var(--color-telon)', paddingBottom: '5px', color: 'var(--color-telon)' }}>📋 Cuaderno del Director</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
               {actos.map(acto => {
@@ -572,6 +729,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
     );
   }
 
+  // 🎨 5. Renderizado de Interfaz Principal de Juego y Configuración
   return (
     <div className={styles.teatroPageWrapper}>
       <div className={styles.teatroContainer}>
@@ -583,7 +741,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
         </header>
 
         <main className={styles.escenario}>
-          {/* PANTALLA 1: CONFIGURACIÓN */}
           {pantalla === 'config' && (
             <div className={styles.bloqueConfig}>
               <div className={styles.recuadroExplicativo}>
@@ -607,12 +764,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
                     <input type="number" className={styles.inputTiempoNumber} value={tiemposConfig.intro} onChange={(e) => handleTiempoChange('intro', Number(e.target.value))} />
                   </label>
                   <label className={styles.labelStyle}>
-                    <span>⚡ 1er Giro</span>
-                    <input type="number" className={styles.inputTiempoNumber} value={tiemposConfig.giro1} onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))} />
-                  </label>
-                  <label className={styles.labelStyle}>
-                    <span>🔥 2do Giro</span>
-                    <input type="number" className={styles.inputTiempoNumber} value={tiemposConfig.giro2} onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))} />
+                    <span>⚡ Nudo (2 Giros)</span>
+                    <input type="number" className={styles.inputTiempoNumber} value={tiemposConfig.nudo} onChange={(e) => handleTiempoChange('nudo', Number(e.target.value))} />
                   </label>
                   <label className={styles.labelStyle}>
                     <span>🏁 Desenlace</span>
@@ -627,7 +780,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
             </div>
           )}
 
-          {/* PANTALLA 2: JUEGO */}
           {pantalla === 'jugando' && (
             <div className={styles.bloqueJuego}>
               <div className={styles.cronometro}>
@@ -640,12 +792,10 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
 
               <div className={styles.recuadroExplicativo} style={{ backgroundColor: '#fffdf5', border: '1px solid var(--color-oro)' }}>
                 {faseActual === 'intro' && <p style={{ color: '#b92929', textAlign: 'center' }}><strong>🎯 Misión Intro</strong><br/>Entabla el contexto básico, la relación con tu compañero e intégrate con el título.</p>}
-                {faseActual === 'giro1' && <p style={{ color: '#b92929', textAlign: 'center' }}><strong>⚡ Misión Primer Giro</strong><br/>¡Introduce un secreto o hecho imprevisto que cambie el rumbo de la conversación!</p>}
-                {faseActual === 'giro2' && <p style={{ color: '#b92929', textAlign: 'center' }}><strong>🔥 Misión Segundo Giro</strong><br/>¡Aumenta la tensión! Pon una cuenta atrás, una amenaza o un factor límite.</p>}
+                {faseActual === 'nudo' && <p style={{ color: '#b92929', textAlign: 'center' }}><strong>⚡ Misión Nudo (Doble Giro)</strong><br/>¡Desata el caos! Introduce una revelación inesperada Y añade un factor límite o amenaza para complicarlo todo.</p>}
                 {faseActual === 'desenlace' && <p style={{ color: '#27ae60', textAlign: 'center' }}><strong>🏁 Misión Desenlace</strong> Guía la improvisación hacia un final ingenioso o divertido.</p>}
               </div>
 
-              {/* Monitor del Director */}
               <div style={{
                 backgroundColor: '#f8f9fa',
                 borderLeft: ultimoFeedbackFijo ? (ultimoFeedbackFijo.aprobado ? '5px solid #27ae60' : '5px solid #e74c3c') : '5px solid #bdc3c7',
@@ -667,7 +817,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
                 )}
               </div>
 
-              {/* 🎙️ TEXTO RECORTE / DIRECTO LIMPIO */}
               <div className={`${styles.recuadroTranscripcion} ${escuchando ? styles.ondaActiva : ''}`}>
                 {loading ? (
                   <p className={styles.textoHablado}>⏳ {loadingTexto}</p>
@@ -683,7 +832,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
               <div className={styles.historialRecorte}>
                 {historialLetra.slice(-3).map((m, i) => (
                   <div key={i} className={`${styles.lineaDialogo} ${m.role === 'user' ? styles.user : styles.assistant}`}>
-                    <strong>{m.role === 'user' ? 'Tú: ' : 'Co-Actor: '}</strong>{m.content}
+                    <strong>{m.role === 'user' ? 'Tú: ' : 'Co-Actor: '}</strong>
+                    {m.content === "[SIN_RESPUESTA]" ? "..." : m.content}
                   </div>
                 ))}
               </div>
