@@ -16,11 +16,26 @@ interface ObraHistorial {
   desenlace: string;
 }
 
+// Interfaz para controlar el tiempo por separado de cada acto
+interface TiemposConfig {
+  intro: number;
+  giro1: number;
+  giro2: number;
+  desenlace: number;
+}
+
 export default function ImproPage() {
   // Configuración de los controles iniciales
   const [modalidad, setModalidad] = useState<string>('inicio de impro');
   const [dificultad, setDificultad] = useState<string>('media');
-  const [tiempoConfig, setTiempoConfig] = useState<number>(20); 
+  
+  // ⏱️ Estado para los tiempos independientes por cada fase
+  const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>({
+    intro: 20,
+    giro1: 20,
+    giro2: 20,
+    desenlace: 20
+  }); 
 
   // Estados del flujo y fases
   const [faseActual, setFaseActual] = useState<FaseActo>('intro');
@@ -76,6 +91,14 @@ export default function ImproPage() {
     };
   }, []);
 
+  // Handler dinámico para cambiar los inputs de tiempo
+  const handleTiempoChange = (fase: FaseActo, valor: number) => {
+    setTiemposConfig(prev => ({
+      ...prev,
+      [fase]: valor
+    }));
+  };
+
   // 🎙️ FUNCIONES DE AUDIO NATIVO
   const iniciarGrabacionNativa = async () => {
     try {
@@ -125,15 +148,15 @@ export default function ImproPage() {
 
   const getExplicacionInicial = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Construye una obra de improvisación completa por actos. Fase 1: Describe el inicio (relación, ánimo, conflicto y lugar). Si apruebas, ¡tendrás 10 segundos por cada punto de giro y desenlace!';
+      return 'Construye una obra de improvisación completa por actos. Configura los tiempos de cada reto abajo, asume tu rol ¡y que empiece el espectáculo!';
     }
     return '¡A improvisar por fases!';
   };
 
   // 🚀 GENERAR TÍTULO E INICIAR FUNCIÓN (ACTO I)
   const iniciarEjercicio = async (): Promise<void> => {
-    if (tiempoConfig <= 0) {
-      alert("Por favor, introduce un tiempo de escena válido.");
+    if (tiemposConfig.intro <= 0 || tiemposConfig.giro1 <= 0 || tiemposConfig.giro2 <= 0 || tiemposConfig.desenlace <= 0) {
+      alert("Por favor, introduce tiempos válidos (mayores a 0 segundos) para todos los actos.");
       return;
     }
 
@@ -145,7 +168,6 @@ export default function ImproPage() {
     setFaseActual('intro');
     esBotonFinalizarRef.current = false;
 
-    // Resetear el libreto de la obra actual
     setObra({ titulo: '', intro: '', giro1: '', giro2: '', desenlace: '' });
 
     const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
@@ -205,7 +227,7 @@ Título final:`;
       setTitulos((prev) => [...prev, nuevoTitulo]);
       setObra(prev => ({ ...prev, titulo: nuevoTitulo }));
 
-      setTimeLeft(tiempoConfig); 
+      setTimeLeft(tiemposConfig.intro); 
       setPantalla('jugando');
       
       await iniciarGrabacionNativa();
@@ -238,7 +260,6 @@ Título final:`;
 
     const TAMAÑO_MINIMO_VOZ = 12288;
 
-    // --- PASO 1: TRANSCRIPCIÓN CON WHISPER ---
     if (audioBlob && audioBlob.size > TAMAÑO_MINIMO_VOZ) {
       try {
         setLoadingTexto('Escuchando tu grabación con Whisper...');
@@ -275,60 +296,74 @@ Título final:`;
 
     setTextoUsuario(transcripcionFinal);
     const propuestaFinal = transcripcionFinal !== "" ? transcripcionFinal : '[SIN_RESPUESTA]';
-
-// Configurar instrucciones del Director dinámicamente según la fase/acto actual (Criterios flexibilizados)
-// Configurar instrucciones del Director dinámicamente según la fase/acto actual (Criterios Equilibrados)
+// Configurar instrucciones del Director dinámicamente según la fase/acto actual
     let consignasEspecificas = '';
+    
     if (faseActual === 'intro') {
-      consignasEspecificas = `CRITERIO EVALUACIÓN: El actor debe iniciar la historia basándose en el título "${titulo}". 
-- Evalúa con criterio teatral pero de forma abierta.
-- Para ser APROBADO, el usuario DEBE desarrollar una idea, premisa, personaje o situación mínimamente vinculada al título o al contexto de la escena.
-- Acepta como RELACIÓN cualquier vínculo, enemistad, antagonismo o hilo dramático (incluso implícito en la acción o intenciones).
-🚨 REGLA DE RECHAZO CRÍTICA: Si el usuario solo dice un saludo suelto (ej: "hola", "buenas"), una única palabra, una frase genérica que no aporta nada a la historia o evade por completo el título, DEBES poner "aprobado": false. Un "¡Hola!" sin más historia NO es suficiente para subir el telón.`;
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>. El título es fijo y no se juzga.
+- Para otorgar "aprobado": true, el actor debe haber propuesto una premisa, acción, personaje o conflicto que guarde una relación lógica, cómica o temática con el título "${titulo}".
+- No exijas genialidad artística: si el texto continúa, expande o se inspira coherentemente en el universo del título, dalo por bueno.
+
+🚨 REGLA DE RECHAZO CRÍTICA:
+- Si el usuario evade el título por completo, dice sinsentidos inconexos, palabras sueltas o un saludo básico (ej: "hola", "buenas", "¡sube el telón!"), debes poner "aprobado": false de inmediato.`;
+      
     } else if (faseActual === 'giro1') {
-      consignasEspecificas = `CONTEXTO: Introducción previa: "${obra.intro}". CRITERIO EVALUACIÓN: El actor debe proponer un PRIMER PUNTO DE GIRO (un imprevisto o revelación). Debe aportar algo nuevo que cambie la dirección de la historia presentada en la introducción. Si solo saluda, no aporta nada o evade el contexto, "aprobado" DEBE ser false.`;
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe introducir un PRIMER PUNTO DE GIRO (un imprevisto, secreto o revelación repentina) que altere directamente el rumbo de la introducción previa ("${obra.intro}").
+- Verifica si la propuesta reacciona al contexto dramático heredado. Si es un saludo, texto vacío o una evasión sin relación, "aprobado" DEBE ser false.`;
+      
     } else if (faseActual === 'giro2') {
-      consignasEspecificas = `CONTEXTO: Intro: "${obra.intro}" | Giro 1: "${obra.giro1}". CRITERIO EVALUACIÓN: El actor debe añadir un SEGUNDO PUNTO DE GIRO que eleve la complicación y haga que la dirección de la historia cambie. Si es un texto vacío, inconexo o un saludo, "aprobado" DEBE ser false.`;
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe sumar un SEGUNDO PUNTO DE GIRO (añadir más presión, peligro, complicación extrema o un factor contrarreloj) sobre lo que ya ocurrió en la Intro ("${obra.intro}") y el Giro 1 ("${obra.giro1}").
+- Si el texto está vacío, es inconexo o no añade ninguna complicación a la narrativa previa, "aprobado" DEBE ser false.`;
+      
     } else if (faseActual === 'desenlace') {
-      consignasEspecificas = `CONTEXTO: Intro: "${obra.intro}" | Giros: "${obra.giro1}" -> "${obra.giro2}". CRITERIO EVALUACIÓN: El actor debe dar un cierre final que cierre el conflicto planteado en la introducción. Si no concluye nada de la historia planteada en la introducción o el texto carece de sustancia, "aprobado" DEBE ser false.`;
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe dar un cierre o resolución final, idealmente divertido o inesperado, que concluya la cadena de eventos previos (Intro: "${obra.intro}" -> Giros: "${obra.giro1}" y "${obra.giro2}").
+- Si el texto carece de sustancia resolutiva o corta la escena abruptamente sin cerrar nada, "aprobado" DEBE ser false.`;
     }
 
     setLoadingTexto('El Director está redactando las notas...');
 
-const promptDirector = `
+    const promptDirector = `
 [ROL]
 Eres un Director de teatro de improvisación hiperactivo, técnico, apasionado y muy exigente. Hablas siempre utilizando jerga teatral ("¡Arriba el telón!", "¡Falta ritmo!", "¡Puro drama!", "¡Eso es actuar!").
 
-[CONSIGNAS DE EVALUACIÓN MULTI-FASE PARA ESTE ACTO]
+[MISIÓN DE ANÁLISIS]
+Tu único trabajo es juzgar si el <texto_del_actor> cumple con el objetivo técnico del acto actual. El título y el historial son contextos fijos para medir la coherencia; ESTÁ PROHIBIDO evaluar si el título es creativo o lo que aporta. Juzga al ACTOR, no al escenario.
+
+[CONSIGNAS ESPECÍFICAS PARA ESTE ACTO]
 ${consignasEspecificas}
 
 [DATOS DE ENTRADA DE LA ESCENA]
-<titulo_base>${titulo}</titulo_base>
+<titulo_escena_contexto>${titulo}</titulo_escena_contexto>
 <texto_del_actor>${propuestaFinal}</texto_del_actor>
 
 🚨 [REGLA INQUEBRANTABLE DE MUTISMO]
-Analiza el contenido exacto dentro de <texto_del_actor>. 
-- SÓLO si el texto es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false de manera matemática y obligatoria, y ahí es cuando debes lanzar una bronca divertida por quedarse congelado o hacer un mutismo en el escenario.
-- Si hay CUALQUIER otra frase escrita dentro de <texto_del_actor> (como resolver el conflicto con unas gafas), evalúala bajo los criterios normales de la fase actual y NO apliques esta regla de mutismo.
+- Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false de manera matemática. Lanza una bronca divertida por quedarse congelado o hacer un mutismo.
+- Si hay cualquier otra propuesta escrita, ignora esta regla de mutismo y evalúala bajo los criterios normales detallados arriba.
 
 [FORMATO DE SALIDA ESTRICTO]
 Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no uses la sintaxis \`\`\`json ni introducciones de texto. Solo el objeto crudo:
 {
   "aprobado": true o false,
-  "comentario": "Tu crítica teatral breve de máximo 35 palabras utilizando tu jerga, validando por qué la propuesta funciona cinematográficamente o detallando qué faltó de forma específica."
+  "comentario": "Tu crítica teatral breve de máximo 35 palabras utilizando tu jerga, validando por qué la propuesta funciona dramáticamente o detallando qué faltó de forma específica."
 }`;
 
     try {
       const response = await groq.chat.completions.create({
         model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: promptDirector }],
-        temperature: 0.2, // Reducimos temperatura para asegurar el JSON limpio
+        temperature: 0.2, 
         max_tokens: 150,
       });
 
       const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
       
-      // Filtro quirúrgico para extraer el objeto JSON ignorando textos satélite o markdown accidental
       const inicioJson = textoCrudo.indexOf('{');
       const finJson = textoCrudo.lastIndexOf('}');
       const jsonLimpio = textoCrudo.substring(inicioJson, finJson + 1);
@@ -339,7 +374,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
       setFeedbackDirector(objetoJSON.comentario || '¡Falta contundencia en la propuesta!');
       setAprobadoPorDirector(validado);
 
-      // Si el acto es aprobado, guardamos la porción del libreto correspondiente
       if (validado && propuestaFinal !== '[SIN_RESPUESTA]') {
         setObra(prev => ({ ...prev, [faseActual]: propuestaFinal }));
       }
@@ -359,7 +393,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     detenerGrabacionYProcesar();
   };
 
-  // 🔄 AVANCES SEGUROS ENTRE FASES
   const avanzarSiguienteFase = async () => {
     esBotonFinalizarRef.current = false;
     setTextoUsuario('');
@@ -367,17 +400,17 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
 
     if (faseActual === 'intro') {
       setFaseActual('giro1');
-      setTimeLeft(10); // Límite estricto de 10s para el Reto
+      setTimeLeft(tiemposConfig.giro1); 
       setPantalla('jugando');
       setTimeout(() => iniciarGrabacionNativa(), 100);
     } else if (faseActual === 'giro1') {
       setFaseActual('giro2');
-      setTimeLeft(10);
+      setTimeLeft(tiemposConfig.giro2); 
       setPantalla('jugando');
       setTimeout(() => iniciarGrabacionNativa(), 100);
     } else if (faseActual === 'giro2') {
       setFaseActual('desenlace');
-      setTimeLeft(10);
+      setTimeLeft(tiemposConfig.desenlace); 
       setPantalla('jugando');
       setTimeout(() => iniciarGrabacionNativa(), 100);
     } else if (faseActual === 'desenlace') {
@@ -391,8 +424,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     setFeedbackDirector('');
     setAprobadoPorDirector(false);
     
-    // Si repite la intro usa su tiempo configurado; si repite giros o desenlace usa los 10 segundos obligatorios
-    setTimeLeft(faseActual === 'intro' ? tiempoConfig : 10);
+    setTimeLeft(tiemposConfig[faseActual]);
     setPantalla('jugando');
     setTimeout(() => iniciarGrabacionNativa(), 100);
   };
@@ -403,9 +435,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     setPantalla('config');
   };
 
-  // --- RENDERS DE PANTALLA ---
-
-  // PANTALLA EXCLUSIVA: OBRA EXITOSA FINALIZADA (Resumen en bloques)
   if (pantalla === 'final') {
     return (
       <div className="teatro-container">
@@ -471,37 +500,68 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
           </div>
         )}
 
-        {/* PANTALLA 1: CONFIGURACIÓN */}
+        {/* PANTALLA 1: CONFIGURACIÓN CON DISEÑO UNIFICADO */}
         {pantalla === 'config' && (
           <div className="bloque-config">
             <div className="recuadro-explicativo">
               <div className="titulo-mision">💡Misión de la Obra💡</div>
               {getExplicacionInicial()}
             </div>
+            
             <br/>
+            
+            {/* Todos los controles agrupados dentro del mismo bloque .controles-group original */}
             <div className="controles-group">
               <label>Dificultad
                 <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
                   <option value="fácil">Fácil (Cotidiano)</option>
                   <option value="media">Media (Interesante)</option>
-                  <option value="difícil">Difficult (Locura)</option>
+                  <option value="difícil">Difícil (Locura)</option>
                 </select>
               </label>
 
-              <label>Tiempo Intro (segundos)
+              <label>Planteamiento (Intro)
                 <input 
                   type="number" 
                   className="input-tiempo-number"
-                  value={tiempoConfig} 
-                  min={1}
-                  max={300} 
-                  step={1}
-                  onChange={(e) => setTiempoConfig(Number(e.target.value))}
+                  value={tiemposConfig.intro} 
+                  min={1} max={300}
+                  onChange={(e) => handleTiempoChange('intro', Number(e.target.value))}
+                />
+              </label>
+
+              <label>Primer Giro (Giro 1)
+                <input 
+                  type="number" 
+                  className="input-tiempo-number"
+                  value={tiemposConfig.giro1} 
+                  min={1} max={300}
+                  onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))}
+                />
+              </label>
+
+              <label>Segundo Giro (Giro 2)
+                <input 
+                  type="number" 
+                  className="input-tiempo-number"
+                  value={tiemposConfig.giro2} 
+                  min={1} max={300}
+                  onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))}
+                />
+              </label>
+
+              <label>Desenlace Final
+                <input 
+                  type="number" 
+                  className="input-tiempo-number"
+                  value={tiemposConfig.desenlace} 
+                  min={1} max={300}
+                  onChange={(e) => handleTiempoChange('desenlace', Number(e.target.value))}
                 />
               </label>
             </div>
 
-            <button className="btn-teatro btn-comenzar" onClick={iniciarEjercicio} disabled={loading}>
+            <button className="btn-teatro btn-comenzar" style={{ marginTop: '25px' }} onClick={iniciarEjercicio} disabled={loading}>
               {loading ? 'Afinando el libreto...' : '¡Subir el Telón! 🚀'}
             </button>
           </div>
@@ -510,8 +570,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
         {/* PANTALLA 2: JUGANDO */}
         {pantalla === 'jugando' && (
           <div className="bloque-juego">
-            
-            {/* Contexto dinámico según la fase para guiar al improvisador */}
             <div className="recuadro-explicativo" style={{ marginBottom: '15px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
               {faseActual === 'intro' && (
                 <p><strong>🎯 Objetivo:</strong> Plantea la escena. Muestra claramente la relación de los personajes, el estado anímico, el conflicto y el lugar.</p>
@@ -519,14 +577,14 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
               {faseActual === 'giro1' && (
                 <div>
                   <p style={{ color: '#ff7b00', fontSize: '0.9em', marginBottom: '4px' }}><strong>📖 Tu Comienzo:</strong> "{obra.intro}"</p>
-                  <p><strong>⚡ Reto (10s):</strong> ¡Introduce un cambio brusco o imprevisto que tuerza este inicio!</p>
+                  <p><strong>⚡ Reto ({tiemposConfig.giro1}s):</strong> ¡Introduce un cambio brusco o imprevisto que tuerza este inicio!</p>
                 </div>
               )}
               {faseActual === 'giro2' && (
                 <div>
                   <p style={{ color: '#ff7b00', fontSize: '0.9em', marginBottom: '4px' }}><strong>📖 Tu Comienzo:</strong> "{obra.intro}"</p>
                   <p style={{ color: '#ff3b30', fontSize: '0.9em', marginBottom: '4px' }}><strong>🔥 Primer Giro:</strong> "... {obra.giro1}"</p>
-                  <p><strong>💥 Reto (10s):</strong> ¡Añade más leña al fuego! Mete una complicación extra, peligro o factor contrarreloj.</p>
+                  <p><strong>💥 Reto ({tiemposConfig.giro2}s):</strong> ¡Añade más leña al fuego! Mete una complicación extra, peligro o factor contrarreloj.</p>
                 </div>
               )}
               {faseActual === 'desenlace' && (
@@ -534,7 +592,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
                   <p style={{ color: '#ff7b00', fontSize: '0.9em', marginBottom: '4px' }}><strong>📖 Tu Comienzo:</strong> "{obra.intro}"</p>
                   <p style={{ color: '#ff3b30', fontSize: '0.9em', marginBottom: '4px' }}><strong>🔥 Primer Giro:</strong> "... {obra.giro1}"</p>
                   <p style={{ color: '#4cd964', fontSize: '0.9em', marginBottom: '4px' }}><strong>🚀 Segundo Giro:</strong> "... {obra.giro2}"</p>
-                  <p><strong>🏁 Reto (10s):</strong> ¡Cierra la función! Di cómo se resuelve todo el embrollo de golpe de forma divertida.</p>
+                  <p><strong>🏁 Reto ({tiemposConfig.desenlace}s):</strong> ¡Cierra la función! Di cómo se resuelve todo el embrollo de golpe de forma divertida.</p>
                 </div>
               )}
             </div>
@@ -597,12 +655,12 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
                   </button>
                 ) : (
                   <div style={{ display: 'flex', width: '100%', gap: '15px' }}>
-                  <button className="btn-teatro btn-repetir" onClick={reintentarActoActual}>
-                    🔄 Repetir Acto
-                  </button>
-                  <button className="btn-teatro btn-reiniciar" onClick={reiniciarTeatroCompleto}>
-                    🎬 Reiniciar Obra
-                  </button>
+                    <button className="btn-teatro btn-repetir" onClick={reintentarActoActual}>
+                      🔄 Repetir Acto
+                    </button>
+                    <button className="btn-teatro btn-reiniciar" onClick={reiniciarTeatroCompleto}>
+                      🎬 Reiniciar Obra
+                    </button>
                   </div>
                 )}
               </div>
