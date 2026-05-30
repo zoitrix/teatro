@@ -172,12 +172,18 @@ console.log(prompt);
       });
 
       const response = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        // 1. Cambiamos al modelo potente de 70B
+        model: 'llama-3.3-70b-versatile', 
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.95,
-        presence_penalty: 1.2,
-        frequency_penalty: 0.5,
-        max_tokens: 20, 
+        
+        // 2. Mantenemos un límite prudente para el Director (un veredicto de 3-4 frases ocupa unos 60-80 tokens)
+        max_tokens: 120, 
+        
+        // 3. Bajamos un poco la temperatura para que sea técnico, preciso y no se "vaya por las ramas"
+        temperature: 0.5, 
+        
+        // 4. El seguro de vida: se detiene inmediatamente al poner la claqueta
+        stop: ["🎬"]
       });
 
       const nuevoTitulo = response.choices[0]?.message?.content?.trim() || 'Título Misterioso';
@@ -299,10 +305,18 @@ Veredicto del Director:`;
 
     try {
       const response = await groq.chat.completions.create({
-        model: 'llama-3.1-8b-instant',
+        // 1. Cambiamos al modelo potente de 70B
+        model: 'llama-3.3-70b-versatile', 
         messages: [{ role: 'user', content: promptDirector }],
-        max_tokens: 180, 
-        temperature: 0.8, 
+        
+        // 2. Mantenemos un límite prudente para el Director (un veredicto de 3-4 frases ocupa unos 60-80 tokens)
+        max_tokens: 120, 
+        
+        // 3. Bajamos un poco la temperatura para que sea técnico, preciso y no se "vaya por las ramas"
+        temperature: 0.5, 
+        
+        // 4. El seguro de vida: se detiene inmediatamente al poner la claqueta
+        stop: ["🎬"]
       });
 
       const nuevoFeedback = response.choices[0]?.message?.content?.trim() || '¡Buena improvisación!';
