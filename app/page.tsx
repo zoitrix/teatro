@@ -148,7 +148,7 @@ export default function ImproPage() {
 
   const getExplicacionInicial = (): string => {
     if (modalidad === 'inicio de impro') {
-      return 'Construye una obra de improvisación completa por actos. Configura los tiempos de cada reto abajo, asume tu rol ¡y que empiece el espectáculo!';
+      return 'Construye una obra de improvisación completa por actos. Configura los tiempos de cada reto abajo (en segundos), asume tu rol ¡y que empiece el espectáculo!';
     }
     return '¡A improvisar por fases!';
   };
