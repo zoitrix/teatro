@@ -290,35 +290,61 @@ export default function ImproChatPage() {
     const groq = new OpenAI({ apiKey, baseURL: "https://api.groq.com/openai/v1", dangerouslyAllowBrowser: true });
     const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
 
+    // Configurar instrucciones del Director dinámicamente según la fase/acto actual
     let consignasEspecificas = '';
-    if (fase === 'intro') {
-      consignasEspecificas = `El actor debía plantear la escena vinculándola directamente al título del show: "${titulo}".`;
-    } else if (fase === 'giro1') {
-      consignasEspecificas = `El actor debía introducir un PRIMER PUNTO DE GIRO (un imprevisto o secreto repentino) que alterara el rumbo de la introducción.`;
-    } else if (fase === 'giro2') {
-      consignasEspecificas = `El actor debía meter un SEGUNDO PUNTO DE GIRO (añadir presión, peligro o complicación extrema contrarreloj).`;
-    } else if (fase === 'desenlace') {
-      consignasEspecificas = `El actor debía dar un cierre o resolución divertida que pusiera fin a todo el embrollo planteado.`;
+    
+    if (faseActual === 'intro') {
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>. El título es fijo y no se juzga.
+- Para otorgar "aprobado": true, el actor debe haber propuesto una premisa, acción, personaje o conflicto que guarde una relación lógica, cómica o temática con el título "${titulo}".
+- No exijas genialidad artística: si el texto continúa, expande o se inspira coherentemente en el universo del título, dalo por bueno.
+
+🚨 REGLA DE RECHAZO CRÍTICA:
+- Si el usuario evade el título por completo, dice sinsentidos inconexos, palabras sueltas o un saludo básico (ej: "hola", "buenas", "¡sube el telón!"), debes poner "aprobado": false de inmediato.`;
+      
+    } else if (faseActual === 'giro1') {
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe introducir un PRIMER PUNTO DE GIRO (un imprevisto, secreto o revelación repentina) que altere directamente el rumbo de la introducción previa.
+- Verifica si la propuesta reacciona al contexto dramático heredado. Si es un saludo, texto vacío o una evasión sin relación, "aprobado" DEBE ser false.`;
+      
+    } else if (faseActual === 'giro2') {
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe sumar un SEGUNDO PUNTO DE GIRO (añadir más presión, peligro, complicación extrema o un factor contrarreloj) sobre lo que ya ocurrió en la Intro y el Giro 1 .
+- Si el texto está vacío, es inconexo o no añade ninguna complicación a la narrativa previa, "aprobado" DEBE ser false.`;
+      
+    } else if (faseActual === 'desenlace') {
+      consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
+- Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe dar un cierre o resolución final, idealmente divertido o inesperado, que concluya la cadena de eventos previos (Intro y Giros:).
+- Si el texto carece de sustancia resolutiva o corta la escena abruptamente sin cerrar nada, "aprobado" DEBE ser false.`;
     }
 
     const promptDirector = `
-    [ROL]
-    Eres un Director de teatro de improvisación técnico y exigente. Evalúa si la aportación del actor cumple el objetivo dramático del acto.
-    
-    [CONSIGNA DEL ACTO VIGENTE]
-    ${consignasEspecificas}
-    
-    [TEXTO APORTADO POR EL ACTOR EN ESTE ACTO]
-    <texto_del_actor>${propuestaFinal}</texto_del_actor>
-    
-    🚨 [REGLA CRÍTICA]
-    Si el texto es "[SIN_RESPUESTA]", aprobado debe ser false obligatoriamente.
-    
-    Devuelve EXCLUSIVAMENTE un objeto JSON crudo, sin marcas markdown de ningún tipo:
-    {
-      "aprobado": true o false,
-      "comentario": "Tu crítica teatral de máximo 30 palabras usando jerga técnica."
-    }`;
+[ROL]
+Eres un Director de teatro de improvisación hiperactivo, técnico, apasionado y muy exigente. Hablas siempre utilizando jerga teatral ("¡Arriba el telón!", "¡Falta ritmo!", "¡Puro drama!", "¡Eso es actuar!").
+
+[MISIÓN DE ANÁLISIS]
+Tu único trabajo es juzgar si el <texto_del_actor> cumple con el objetivo técnico del acto actual. El título y el historial son contextos fijos para medir la coherencia; ESTÁ PROHIBIDO evaluar si el título es creativo o lo que aporta. Juzga al ACTOR, no al escenario.
+
+[CONSIGNAS ESPECÍFICAS PARA ESTE ACTO]
+${consignasEspecificas}
+
+[DATOS DE ENTRADA DE LA ESCENA]
+<titulo_escena_contexto>${titulo}</titulo_escena_contexto>
+<texto_del_actor>${propuestaFinal}</texto_del_actor>
+
+🚨 [REGLA INQUEBRANTABLE DE MUTISMO]
+- Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false de manera matemática. Lanza una bronca divertida por quedarse congelado o hacer un mutismo.
+- Si hay cualquier otra propuesta escrita, ignora esta regla de mutismo y evalúala bajo los criterios normales detallados arriba.
+
+[FORMATO DE SALIDA ESTRICTO]
+Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no uses la sintaxis \`\`\`json ni introducciones de texto. Solo el objeto crudo:
+{
+  "aprobado": true o false,
+  "comentario": "Tu crítica teatral breve de máximo 35 palabras utilizando tu jerga, validando por qué la propuesta funciona dramáticamente o detallando qué faltó de forma específica. Da detalles de lo que han hablado los dos actores."
+}`;
 
     try {
       const response = await groq.chat.completions.create({
