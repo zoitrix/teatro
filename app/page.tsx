@@ -224,9 +224,6 @@ Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones o expli
 
 Frase final:`;
 
-
-console.log(historialTitulos);
-
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
       if (!apiKey) throw new Error("La API Key de Groq no está configurada.");
