@@ -136,29 +136,32 @@ Eres un espectador real, ingenioso y muy espontáneo en un show de comedia de im
 
 [MISIÓN]
 Inventa una frase inicial o título único de 4 a 7 palabras para que los actores arranquen su escena. 
-¡IMPORTANTE! Debe estar en español, tener sentido completo y sonar natural, como algo dicho en voz alta.
+¡IMPORTANTE! Debe estar en español, tener sentido completo y sonar completamente natural, como algo gritado en voz alta por el público.
 
-[CONTEXTO / FILTRO ANTI-REPETICIÓN]
-- Historial de títulos ya jugados: [${historialTitulos}]
-- REGLA DE ORO PROHIBIDA: Está terminantemente prohibido usar las estructuras "Me he enterado de...", "Sé lo que...", "Nunca te...", o sinónimos de secretos/engaños familiares. Ya hemos explotado demasiado ese drama en este show. ¡Cambia radicalmente de tema!
+[CONTEXTO / FILTRO SEMÁNTICO ESTRICTO]
+- Historial de títulos ya jugados en esta sesión: [${historialTitulos}]
 
-[INSPIRACIÓN TEMÁTICA OBLIGATORIA]
-Para romper la monotonía del show, inspírate en una de estas situaciones alternativas:
-- Absurdos laborales: "Tu jefe ha descubierto que..." / "Mañana cerramos la fábrica de..."
-- Situaciones cotidianas rotas: "No debiste meter eso en..." / "El vecino se ha llevado nuestro..."
-- Órdenes extrañas: "Saca ese pingüino del..." / "Llama ahora mismo al..."
-- Confesiones cómicas no dramáticas: "Creo que me he tragado el..." / "Tu gato me mira raro..."
+🚨 OBLIGACIÓN DE DIVERSIDAD (REGLA DE ORO):
+Analiza el historial anterior. Está TERMINANTEMENTE PROHIBIDO crear títulos de temáticas similares, repetir conceptos o usar sus mismas estructuras sintácticas. 
+Descarta por completo el género del drama doméstico, las infidelidades o los secretos oscuros. No utilices inicios como "Me he enterado de...", "Sé lo que...", "Nunca te..." o sinónimos de engaños familiares. ¡Ya hemos explotado demasiado ese tema, cambia radicalmente de rumbo!
+
+[MECANISMO DE INSPIRACIÓN OBLIGATORIA]
+Para romper la monotonía del show, fuerza a tu red neuronal a seleccionar una atmósfera completamente fresca basada en una de estas situaciones alternativas:
+- Absurdos laborales: "Tu jefe ha descubierto que..." / "Mañana cerramos la fábrica de..." / Problemas caóticos de oficina.
+- Situaciones cotidianas rotas: "No debiste meter eso en..." / "El vecino se ha llevado nuestro..." / Objetos comunes que actúan raro.
+- Órdenes o urgencias extrañas: "Saca ese pingüino del..." / "Llama ahora mismo al..." / Apocalipsis domésticos ridículos.
+- Confesiones cómicas no dramáticas: "Creo que me he tragado el..." / "Tu gato me mira raro..." / Manías y obsesiones extrañas.
 
 [NIVEL DE EXIGENCIA: ${dificultad.toUpperCase()}]
-- FÁCIL: Comedia cotidiana, problemas domésticos o de oficina.
-- MEDIA: Declaraciones incómodas, obsesiones absurdas o sospechas ridículas.
-- DIFÍCIL: Paradojas divertidas, giros existenciales o locuras poéticas con perfecto sentido.
+- FÁCIL: Comedia cotidiana, problemas domésticos o de oficina con un giro simple.
+- MEDIA: Declaraciones incómodas, obsesiones absurdas o sospechas ridículas pero graciosas.
+- DIFÍCIL: Paradojas divertidas, pequeños giros existenciales cómicos o locuras poéticas con perfecto sentido al hablar.
 
-[FORMATO CRÍTICO]
-1. Devuelve ÚNICAMENTE la frase. Sin introducciones, sin comillas, sin puntos y sin explicaciones.
+[FORMATO CRÍTICO ABSOLUTO]
+1. Devuelve ÚNICAMENTE la frase del título.
+2. Está prohibido incluir introducciones, saludos, comentarios, comillas, puntos finales o explicaciones de por qué elegiste el tema.
 
 Título final:`;
-
 console.log(prompt);
 
     try {
