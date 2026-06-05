@@ -736,7 +736,7 @@ REGLAS DE ORO:
     <div className={styles.teatroPageWrapper}>
       <div className={styles.teatroContainer}>
         <header className={styles.teatroHeader}>
-        <h1>🎭 ¡Batalla de Impro! 🎬</h1>
+        <h1>🎭 ¡Batalla! 🎬</h1>
           <p className={styles.subtitulo}>
             {pantalla === 'config' ? 'Ajusta los tiempos del libreto por actos' : `Acto en Curso: ${faseActual.toUpperCase()}`}
           </p>
