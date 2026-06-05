@@ -502,7 +502,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   return (
     <div className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
-        <h1>🎭 ¡Impro Estructura! 🎬</h1>
+        <h1>🎭 ¡StoryBoard! 🎬</h1>
         <p className={styles.subtitulo}>
           {pantalla === 'config' ? '¡Saca un título y construye tu historia!' : `Fase Actual: Acto de ${faseActual.toUpperCase()}`}
         </p>
