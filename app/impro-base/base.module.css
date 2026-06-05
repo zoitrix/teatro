@@ -8,12 +8,17 @@
   --color-fondo-oscuro: #2c3e50; /* Fondo del layout */
 }
 
-* {
-  box-sizing: border-box;
+
+.labelStyle {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  color: var(--color-telon);
 }
 
+
 /* 2. CONTENEDOR PRINCIPAL (LA TABLA / ESCENARIO) */
-.teatro-container {
+.teatroContainer {
   max-width: 650px;
   width: 90%;
   padding: 30px;
@@ -23,15 +28,19 @@
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
 }
 
+.teatroContainer * {
+  box-sizing: border-box;
+}
+
 /* 3. ENCABEZADO */
-.teatro-header {
+.teatroHeader {
   text-align: center;
   border-bottom: 3px dashed var(--color-telon);
   padding-bottom: 12px;
   margin-bottom: 25px;
 }
 
-.teatro-header h1 {
+.teatroHeader h1 {
   color: var(--color-telon);
   margin: 0;
   font-size: 2.3rem;
@@ -54,7 +63,7 @@
 }
 
 /* 5. CARTELERA DEL TÍTULO (SOLO JUEGO Y FEEDBACK) */
-.cartelera-titulo.revelado {
+.carteleraTitulo {
   background: #1c1c1c;
   padding: 20px;
   text-align: center;
@@ -63,7 +72,7 @@
   width: 100%;
 }
 
-.cartelera-titulo.revelado h2 {
+.carteleraTitulo h2 {
   color: var(--color-oro);
   font-size: 1.6rem;
   margin: 0;
@@ -72,13 +81,13 @@
 }
 
 /* 6. PANTALLA 1: FORMULARIO DE CONFIGURACIÓN */
-.bloque-config {
+.bloqueConfig {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-.controles-group {
+.controlesGroup {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 15px;
@@ -86,26 +95,8 @@
   width: 100%;
 }
 
-label {
-  display: flex;
-  flex-direction: column;
-  font-weight: bold;
-  color: var(--color-telon);
-}
-
-select {
-  margin-top: 6px;
-  padding: 10px;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: white;
-  font-family: inherit;
-  width: 100%;
-}
-
 /* 7. PANTALLA 2: ÁREA DE JUEGO Y FORMULARIO DE TEXTO */
-.bloque-juego {
+.bloqueJuego {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -120,7 +111,7 @@ select {
   margin-bottom: -5px;
 }
 
-.recuadro-explicativo {
+.recuadroExplicativo {
   background-color: #fff3cd;
   border-right: 5px solid #ffc107;
   border-left: 5px solid #ffc107;
@@ -132,7 +123,18 @@ select {
   width: 100%;
 }
 
-.titulo-mision {
+.selectStyle {
+  margin-top: 6px;
+  padding: 10px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: white;
+  font-family: inherit;
+  width: 100%;
+}
+
+.tituloMision {
   padding-bottom: 10px;
   font-size: 1.1rem;
   text-align:center;
@@ -141,7 +143,7 @@ select {
 }
 
 /* Contenedor envoltorio que fuerza la simetría horizontal perfecta */
-.formulario-texto-wrapper {
+.formularioTextoWrapper {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -150,7 +152,7 @@ select {
 }
 
 /* El cuadro de texto con look de libreto/pergamino */
-.caja-texto {
+.cajaTexto {
   width: 100%;
   height: 155px;
   padding: 16px;
@@ -166,7 +168,7 @@ select {
   transition: all 0.2s ease;
 }
 
-.caja-texto:focus {
+.cajaTexto:focus {
   outline: none;
   border-style: solid;
   border-color: var(--color-telon);
@@ -175,7 +177,7 @@ select {
 }
 
 /* Alerta visual roja cuando el usuario dicta con el micrófono */
-.caja-texto.borde-grabando {
+.cajaTexto.borde-grabando {
   border-color: #e74c3c;
   background-color: #fff6f6;
   border-style: solid;
@@ -183,7 +185,7 @@ select {
 }
 
 /* Botón interactivo de dictado por voz incorporado abajo a la derecha */
-.btn-dictar-voz {
+.btnDictarVoz {
   align-self: flex-end;
   padding: 8px 16px;
   font-size: 0.95rem;
@@ -197,12 +199,12 @@ select {
   transition: all 0.2s ease;
 }
 
-.btn-dictar-voz:hover {
+.btnDictarVoz:hover {
   background-color: #e2e6ea;
   border-color: #bbb;
 }
 
-.btn-dictar-voz.activo {
+.btnDictarVoz.activo {
   background-color: #e74c3c;
   color: white;
   border-color: #c0392b;
@@ -210,7 +212,7 @@ select {
 }
 
 /* 8. PANTALLA 3: FEEDBACK Y VEREDICTO */
-.bloque-feedback {
+.bloqueFeedback {
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -218,7 +220,7 @@ select {
 }
 
 /* Recuadro oscuro con el texto que introdujo el usuario */
-.recuadro-tu-texto {
+.recuadroTuTexto {
   background-color: #2c3e50;
   color: #ecf0f1;
   padding: 15px 20px;
@@ -227,7 +229,7 @@ select {
   width: 100%;
 }
 
-.recuadro-tu-texto h4 {
+.recuadroTuTexto h4 {
   margin: 0 0 8px 0;
   font-size: 0.95rem;
   color: var(--color-oro);
@@ -235,14 +237,14 @@ select {
   letter-spacing: 0.5px;
 }
 
-.recuadro-feedback h4 {
+.recuadroFeedback h4 {
   margin: 0 0 8px 0;
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.texto-guardado-usuario {
+.textoGuardadoUsuario {
   margin: 0;
   font-size: 1.1rem;
   font-style: italic;
@@ -250,7 +252,7 @@ select {
 }
 
 /* Recuadro claro con la opinión de la IA */
-.recuadro-feedback {
+.recuadroFeedback {
   background: white;
   border: 3px dashed var(--color-oro);
   padding: 20px;
@@ -258,25 +260,25 @@ select {
   width: 100%;
 }
 
-.recuadro-feedback h3 {
+.recuadroFeedback h3 {
   margin-top: 0;
   color: var(--color-telon);
 }
 
-.texto-feedback {
+.textoFeedback {
   font-size: 1.05rem;
   line-height: 1.5;
   margin: 0;
 }
 
-.loading-text {
+.loadingText {
   font-style: italic;
   color: #7f8c8d;
   margin: 0;
 }
 
 /* 9. BOTONES DE ACCIÓN PRINCIPALES DEL TEATRO */
-.btn-teatro {
+.btnTeatro {
   display: block;
   width: 100%;
   padding: 14px;
@@ -290,27 +292,27 @@ select {
   font-family: inherit;
 }
 
-.btn-teatro:active { 
+.btnTeatro:active { 
   transform: scale(0.97); 
 }
 
-.btn-teatro:disabled {
+.btnTeatro:disabled {
   background-color: #bdc3c7;
   cursor: not-allowed;
   transform: none;
 }
 
-.btn-comenzar { background-color: #27ae60; color: white; }
-.btn-comenzar:hover { background-color: #219653; }
+.btnComenzar { background-color: #27ae60; color: white; }
+.btnComenzar:hover { background-color: #219653; }
 
-.btn-enviar { background-color: var(--color-telon); color: white; }
-.btn-enviar:hover { background-color: #66001a; }
+.btnEnviar { background-color: var(--color-telon); color: white; }
+.btnEnviar:hover { background-color: #66001a; }
 
-.btn-repetir { background-color: #2980b9; color: white; }
-.btn-repetir:hover { background-color: #2471a3; }
+.btnRepetir { background-color: #2980b9; color: white; }
+.btnRepetir:hover { background-color: #2471a3; }
 
-.btn-reiniciar { background-color: #b92929; color: white; }
-.btn-reiniciar:hover { background-color: #a32424; }
+.btnReiniciar { background-color: #b92929; color: white; }
+.btnReiniciar:hover { background-color: #a32424; }
 
 /* 10. ANIMACIONES */
 @keyframes pulso-microfono {
@@ -319,7 +321,7 @@ select {
   100% { transform: scale(1); }
 }
 
-.input-tiempo-number {
+.inputTiempoNumber {
   padding: 8px 12px;
   border-radius: 6px;
   border: 2px solid #ccc;
@@ -333,13 +335,13 @@ select {
 }
 
 /* Opcional: Resaltar cuando está enfocado */
-.input-tiempo-number:focus {
+.inputTiempoNumber:focus {
   border-color: #ff4757; /* Pon aquí el color primario de tu teatro */
   outline: none;
 }
 
 /* Recuadro que sustituye a la caja de texto (look de transcripción limpia) */
-.recuadro-transcripcion {
+.recuadroTranscripcion {
   width: 100%;
   min-height: 155px;
   max-height: 220px;
@@ -353,13 +355,13 @@ select {
 }
 
 /* Efecto cuando el micrófono está capturando audio */
-.recuadro-transcripcion.onda-activa {
+.recuadroTranscripcion.onda-activa {
   border: 2px solid #e74c3c;
   background-color: #fffaf9;
   box-shadow: 0 0 10px rgba(231, 76, 60, 0.15);
 }
 
-.texto-hablado {
+.textoHablado {
   font-size: 1.2rem;
   line-height: 1.5;
   color: #2c3e50;
@@ -367,7 +369,7 @@ select {
   font-weight: 500;
 }
 
-.placeholder-voz {
+.placeholderVoz {
   font-style: italic;
   color: #7f8c8d;
   margin: 0;
@@ -376,7 +378,7 @@ select {
 }
 
 /* Botón estilizado para controlar el micrófono */
-.btn-control-micro {
+.btnControlMicro {
   align-self: flex-end;
   padding: 6px 14px;
   font-size: 0.9rem;
@@ -388,17 +390,17 @@ select {
   transition: all 0.2s;
 }
 
-.btn-control-micro:hover {
+.btnControlMicro:hover {
   background-color: #f1f2f6;
 }
 
-.btn-control-micro.activo {
+.btnControlMicro.activo {
   border-color: #e74c3c;
   color: #e74c3c;
 }
 
 /* Botón Walkie-Talkie integrado con el estilo del teatro */
-.btn-walkie-talkie-recto {
+.btnWalkieTalkieRecto {
   width: 100%;
   max-width: 400px;
   padding: 20px 15px;
@@ -411,7 +413,7 @@ select {
 }
 
 /* Cambios de color cuando el usuario mantiene la pulsación */
-.btn-walkie-talkie-recto.grabando-activo {
+.btnWalkieTalkieRecto.grabando-activo {
   background: #ff4757 !important; /* Rojo escénico de grabación */
   color: #ffffff !important;
   border-color: #ba1c2a !important;

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OpenAI } from 'openai';
-import '../global.css'; // Global primero
+import styles from './base.module.css';
 
 // Definimos los tipos de actos por los que pasará la obra
 type FaseActo = 'intro' | 'giro1' | 'giro2' | 'desenlace';
@@ -451,46 +451,47 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
 
   if (pantalla === 'final') {
     return (
-      <div className="teatro-container">
-        <header className="teatro-header">
+      <div className={styles.teatroContainer}>
+        <header className={styles.teatroHeader}>
           <h1>🏆 ¡GRAN FUNCIÓN COMPLETADA! 💐</h1>
-          <p className="subtitulo">El público ovaciona en pie tu capacidad de improvisación</p>
+          <p className={styles.subtitulo}>El público ovaciona en pie tu capacidad de improvisación</p>
         </header>
 
-        <main className="escenario">
-          <div className="cartelera-titulo revelado">
+        <main className={styles.escenario}>
+          <div className={styles.carteleraTitulo}>
+
             <h2>🎬 LIBRETO FINAL: "{obra.titulo}"</h2>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '600px', margin: '0 auto 25px auto' }}>
-            <div className="recuadro-explicativo" style={{ textAlign: 'left', borderLeft: '5px solid #ffd700' }}>
+            <div className={styles.recuadroExplicativo} style={{ textAlign: 'left', borderLeft: '5px solid #ffd700' }}>
               <strong>📖 Acto I: Introducción</strong>
               <p style={{ marginTop: '5px', fontStyle: 'italic' }}>"{obra.intro}"</p>
             </div>
 
-            <div className="recuadro-explicativo" style={{ textAlign: 'left', borderLeft: '5px solid #ff7b00' }}>
+            <div className={styles.recuadroExplicativo} style={{ textAlign: 'left', borderLeft: '5px solid #ff7b00' }}>
               <strong>⚡ Acto II: Primer Punto de Giro</strong>
               <p style={{ marginTop: '5px', fontStyle: 'italic' }}>"{obra.giro1}"</p>
             </div>
 
-            <div className="recuadro-explicativo" style={{ textAlign: 'left', borderLeft: '5px solid #ff3b30' }}>
+            <div className={styles.recuadroExplicativo} style={{ textAlign: 'left', borderLeft: '5px solid #ff3b30' }}>
               <strong>🔥 Acto III: Segundo Punto de Giro</strong>
               <p style={{ marginTop: '5px', fontStyle: 'italic' }}>"{obra.giro2}"</p>
             </div>
 
-            <div className="recuadro-explicativo" style={{ textAlign: 'left', borderLeft: '5px solid #4cd964' }}>
+            <div className={styles.recuadroExplicativo} style={{ textAlign: 'left', borderLeft: '5px solid #4cd964' }}>
               <strong>🏁 Acto IV: Desenlace Final</strong>
               <p style={{ marginTop: '5px', fontStyle: 'italic' }}>"{obra.desenlace}"</p>
             </div>
           </div>
 
-          <div className="recuadro-feedback" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)', border: '1px dashed #ffd700', marginBottom: '20px' }}>
-            <p className="texto-feedback" style={{ textAlign: 'center', fontWeight: 'bold' }}>
+          <div className={styles.recuadroFeedback} style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)', border: '1px dashed #ffd700', marginBottom: '20px' }}>
+            <p className={styles.textoFeedback} style={{ textAlign: 'center', fontWeight: 'bold' }}>
               ✨ ¡Enhorabuena! Has mantenido la coherencia dramática y cómica bajo la presión del cronómetro.
             </p>
           </div>
 
-          <button className="btn-teatro btn-comenzar" onClick={reiniciarTeatroCompleto}>
+          <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={reiniciarTeatroCompleto}>
             🔄 Iniciar Nueva Obra
           </button>
         </main>
@@ -499,37 +500,37 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   }
 
   return (
-    <div className="teatro-container">
-      <header className="teatro-header">
+    <div className={styles.teatroContainer}>
+      <header className={styles.teatroHeader}>
         <h1>🎭 ¡Impro Estructura! 🎬</h1>
-        <p className="subtitulo">
+        <p className={styles.subtitulo}>
           {pantalla === 'config' ? '¡Saca un título y construye tu historia!' : `Fase Actual: Acto de ${faseActual.toUpperCase()}`}
         </p>
       </header>
 
-      <main className="escenario">
+      <main className={styles.escenario}>
         {pantalla !== 'config' && titulo && (
-          <div className="cartelera-titulo revelado">
+          <div className={styles.carteleraTitulo}>
             <h2>{titulo}</h2>
           </div>
         )}
 
         {/* PANTALLA 1: CONFIGURACIÓN CON DISEÑO UNIFICADO */}
         {pantalla === 'config' && (
-          <div className="bloque-config">
-            <div className="recuadro-explicativo">
-              <div className="titulo-mision">💡Misión de la Obra💡</div>
+          <div className={styles.bloqueConfig}>
+            <div className={styles.recuadroExplicativo}>
+              <div className={styles.tituloMision}>💡Misión de la Obra💡</div>
               {getExplicacionInicial()}
             </div>
             
             <br/>
             {/* Todos los controles agrupados dentro del mismo bloque .controles-group original */}
-<div className="controles-group" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+<div className={styles.controlesGroup} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
   
   {/* Fila superior: Selector de dificultad a ancho completo */}
-  <label style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+  <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
     Dificultad
-    <select value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
+    <select className={styles.selectStyle} value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
       <option value="fácil">Fácil (Cotidiano)</option>
       <option value="media">Media (Interesante)</option>
       <option value="difícil">Difficult (Locura)</option>
@@ -543,44 +544,44 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     gap: '12px', 
     width: '100%' 
   }}>
-    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
       <span>⏱️ Inicio</span>
       <input 
         type="number" 
-        className="input-tiempo-number"
+        className={styles.inputTiempoNumber}
         value={tiemposConfig.intro} 
         min={1} max={300}
         onChange={(e) => handleTiempoChange('intro', Number(e.target.value))}
       />
     </label>
 
-    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
       <span>⚡ 1er Giro</span>
       <input 
         type="number" 
-        className="input-tiempo-number"
+        className={styles.inputTiempoNumber}
         value={tiemposConfig.giro1} 
         min={1} max={300}
         onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))}
       />
     </label>
 
-    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
       <span>🔥 2do Giro</span>
       <input 
         type="number" 
-        className="input-tiempo-number"
+        className={styles.inputTiempoNumber}
         value={tiemposConfig.giro2} 
         min={1} max={300}
         onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))}
       />
     </label>
 
-    <label style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
       <span>🏁 Desenlace</span>
       <input 
         type="number" 
-        className="input-tiempo-number"
+        className={styles.inputTiempoNumber}
         value={tiemposConfig.desenlace} 
         min={1} max={300}
         onChange={(e) => handleTiempoChange('desenlace', Number(e.target.value))}
@@ -590,7 +591,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
 
 </div>
 
-            <button className="btn-teatro btn-comenzar" style={{ marginTop: '25px' }} onClick={iniciarEjercicio} disabled={loading}>
+            <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} style={{ marginTop: '25px' }} onClick={iniciarEjercicio} disabled={loading}>
               {loading ? 'Afinando el libreto...' : '¡Subir el Telón! 🚀'}
             </button>
           </div>
@@ -598,8 +599,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
 
         {/* PANTALLA 2: JUGANDO */}
         {pantalla === 'jugando' && (
-          <div className="bloque-juego">
-            <div className="recuadro-explicativo" style={{ marginBottom: '15px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+          <div className={styles.bloqueJuego}>
+            <div className={styles.recuadroExplicativo} style={{ marginBottom: '15px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
               {faseActual === 'intro' && (
                 <p><strong>🎯 Objetivo:</strong> Plantea la escena. Muestra claramente la relación de los personajes, el estado anímico, el conflicto y el lugar.</p>
               )}
@@ -626,19 +627,19 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
               )}
             </div>
 
-            <div className="cronometro">
+            <div className={styles.cronometro}>
               ⏱️ {timeLeft}s
             </div>
 
-            <div className="formulario-texto-wrapper centralizado">
-              <div className={`indicador-estado-voz ${escuchando ? 'grabando-activo-pc' : ''}`}>
-                <p className="texto-estado">
+            <div className={styles.formularioTextoWrapper} style={{ textAlign: 'center' }}>
+              <div className={`indicadorEstadoVoz ${escuchando ? 'grabandoActivoPc' : ''}`}>
+                <p className={styles.textoEstado}>
                   {escuchando ? "🎙️ El escenario está abierto... ¡Actúa e improvisa en voz alta!" : "🔇 Finalizando grabación de audio..."}
                 </p>
               </div>
             </div>
 
-            <button className="btn-teatro btn-enviar" onClick={clickBotonTerminarManual} disabled={loading}>
+            <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={clickBotonTerminarManual} disabled={loading}>
               ¡Terminar Acto! 🔔
             </button>
           </div>
@@ -646,12 +647,12 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
 
         {/* PANTALLA 3: FEEDBACK DINÁMICO */}
         {pantalla === 'feedback' && (
-          <div className="bloque-feedback">
-            <div className="recuadro-tu-texto">
+          <div className={styles.bloqueFeedback}>
+            <div className={styles.recuadroTuTexto}>
               <h4>📖 Tu Propuesta para este Acto</h4>
-              <p className="texto-guardado-usuario">
+              <p className={styles.textoGuardadoUsuario}>
                 {loading && !textoUsuario ? (
-                  <span className="loading-subtext">Transcribiendo tu voz... 🎧</span>
+                  <span className={styles.loadingSubtext}>Transcribiendo tu voz... 🎧</span>
                 ) : textoUsuario.trim() ? (
                   `"${textoUsuario.trim()}"`
                 ) : (
@@ -660,7 +661,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
               </p>
             </div>
 
-            <div className="recuadro-feedback">
+            <div className={styles.recuadroFeedback}>
               <h4>
                 📝 El Director opina: {' '}
                 {!loading && (
@@ -670,24 +671,24 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
                 )}
               </h4>
               {loading ? (
-                <p className="loading-text">🎬 {loadingTexto || 'El jurado procesa la escena...'} 👏</p>
+                <p className={styles.loadingText}>🎬 {loadingTexto || 'El jurado procesa la escena...'} 👏</p>
               ) : (
-                <p className="texto-feedback">{feedbackDirector}</p>
+                <p className={styles.textoFeedback}>{feedbackDirector}</p>
               )}
             </div>
 
             {!loading && (
               <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
                 {aprobadoPorDirector ? (
-                  <button className="btn-teatro btn-enviar" style={{ backgroundColor: '#28a745' }} onClick={avanzarSiguienteFase}>
+                  <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} style={{ backgroundColor: '#28a745' }} onClick={avanzarSiguienteFase}>
                     {faseActual === 'desenlace' ? '✨ Ver Obra Completa' : 'Siguiente Acto 👉'}
                   </button>
                 ) : (
                   <div style={{ display: 'flex', width: '100%', gap: '15px' }}>
-                    <button className="btn-teatro btn-repetir" onClick={reintentarActoActual}>
+                    <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={reintentarActoActual}>
                       🔄 Repetir Acto
                     </button>
-                    <button className="btn-teatro btn-reiniciar" onClick={reiniciarTeatroCompleto}>
+                    <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={reiniciarTeatroCompleto}>
                       🎬 Reiniciar Obra
                     </button>
                   </div>
