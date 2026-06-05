@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OpenAI } from 'openai';
-import './base.module.css';
+import '../global.css'; // Global primero
 
 // Definimos los tipos de actos por los que pasará la obra
 type FaseActo = 'intro' | 'giro1' | 'giro2' | 'desenlace';
