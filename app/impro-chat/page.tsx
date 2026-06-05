@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OpenAI } from 'openai';
-import styles from './impro.module.css';
+import styles from './chat.module.css';
 
 interface MensajeChat {
   role: 'user' | 'assistant';
