@@ -1,14 +1,6 @@
 /* app/globals.css */
 
 /* 1. CONFIGURACIÓN DE VARIABLES Y REINICIO */
-:root {
-  --color-telon: #800020;    /* Burdeos elegante */
-  --color-oro: #ffd700;      /* Oro teatral */
-  --color-crema: #fffdd0;    /* Crema de fondo para la tabla */
-  --color-fondo-oscuro: #2c3e50; /* Fondo del layout */
-}
-
-
 .labelStyle {
   display: flex;
   flex-direction: column;
@@ -19,6 +11,10 @@
 
 /* 2. CONTENEDOR PRINCIPAL (LA TABLA / ESCENARIO) */
 .teatroContainer {
+  --color-telon: #800020;    /* Burdeos elegante */
+  --color-oro: #ffd700;      /* Oro teatral */
+  --color-crema: #fffdd0;    /* Crema de fondo para la tabla */
+  --color-fondo-oscuro: #2c3e50; /* Fondo del layout */
   max-width: 650px;
   width: 90%;
   padding: 30px;
