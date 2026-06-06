@@ -32,9 +32,9 @@ export default function ImproPage() {
   // ⏱️ Estado para los tiempos independientes por cada fase
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>({
     intro: 20,
-    giro1: 20,
-    giro2: 20,
-    desenlace: 20
+    giro1: 15,
+    giro2: 15,
+    desenlace: 10
   }); 
 
   // Estados del flujo y fases
@@ -502,7 +502,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   return (
     <div className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
-        <h1>🎭 ¡StoryBoard! 🎬</h1>
+        <h1>🎭 ¡Impro60! 🎬</h1>
         <p className={styles.subtitulo}>
           {pantalla === 'config' ? '¡Saca un título y construye tu historia!' : `Fase Actual: Acto de ${faseActual.toUpperCase()}`}
         </p>
