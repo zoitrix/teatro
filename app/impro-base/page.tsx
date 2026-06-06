@@ -541,7 +541,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   <div style={{ 
     display: 'grid', 
     gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', 
-    gap: '5px', 
+    gap: '12px', 
     width: '100%' 
   }}>
     <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
