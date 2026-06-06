@@ -197,19 +197,19 @@ Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de e
 [MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
 Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ejemplos reales:
 
-- FÁCIL (Enredos cotidianos y órdenes directas):
+- FACIL (Enredos cotidianos y órdenes directas):
   * "¡Saca inmediatamente ese pato del coche!" (Una orden loca)
   * "Mañana cerramos la fábrica de almohadas" (Una noticia bomba)
   * "¿Quién ha metido los pantalones en el lavavajillas?" (Una bronca doméstica)
   * "Por favor, devuélveme mis cejas postizas" (Una súplica ridícula)
 
-- MEDIA (Chismes, sospechas y situaciones incómodas):
+- MEDIO (Chismes, sospechas y situaciones incómodas):
   * "Creo que el televisor nos está mintiendo" (Una sospecha absurda - ¡"mintiendo" con I!)
   * "No debiste darle café a ese maniquí" (Un reproche divertido)
   * "Ayer me persiguió un semáforo con prisa" (Una anécdota loca)
   * "¿Desde cuándo los espaguetis tienen opiniones políticas?" (Una duda ridícula)
 
-- DIFÍCIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
+- DIFICIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
   * "Si parpadeas, el pasillo se hace largo" (Una advertencia misteriosa)
   * "Cuidado con los tomates, huelen el miedo" (Un peligro absurdo)
   * "Tu doble de acción está cobrando más que tú" (Un chisme de camerinos)
@@ -531,9 +531,9 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
     Dificultad
     <select className={styles.selectStyle} value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
-      <option value="fácil">Fácil (Cotidiano)</option>
-      <option value="media">Media (Interesante)</option>
-      <option value="difícil">Difficult (Locura)</option>
+      <option value="facil">Fácil (Cotidiano)</option>
+      <option value="media">Medio (Interesante)</option>
+      <option value="dificil">Difícil (Locura)</option>
     </select>
   </label>
 
