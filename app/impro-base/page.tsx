@@ -540,7 +540,8 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   {/* Sub-rejilla: 2 columnas para que los timers ocupen solo 2 filas en total */}
   <div style={{ 
     display: 'grid', 
-    gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', 
+    // Esto fuerza 2 columnas iguales siempre, independientemente del tamaño
+    gridTemplateColumns: '1fr 1fr', 
     gap: '12px', 
     width: '100%' 
   }}>

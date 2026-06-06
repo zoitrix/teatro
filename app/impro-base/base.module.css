@@ -318,16 +318,16 @@
 }
 
 .inputTiempoNumber {
-  padding: 8px 12px;
+  padding: 8px; /* Reducir un poco el padding en móviles */
   border-radius: 6px;
   border: 2px solid #ccc;
   background-color: #fff;
   font-family: inherit;
-  font-size: 1rem;
-  width: 100%; /* Ajusta según el diseño de tu cuadrícula */
+  font-size: 0.9rem; /* Un poco más pequeño para que el texto no se corte */
+  width: 100%;
   box-sizing: border-box;
-  height: 42px;
-  margin-top: 8px;
+  height: 40px;
+  margin-top: 4px;
 }
 
 /* Opcional: Resaltar cuando está enfocado */
