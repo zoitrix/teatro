@@ -1,13 +1,13 @@
-// app/page.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { OpenAI } from 'openai';
 import styles from './base.module.css';
 
-// Definimos los tipos de actos por los que pasará la obra
+// Fases jugables de la obra; cada una tiene su propio tiempo y criterio de evaluacion.
 type FaseActo = 'intro' | 'giro1' | 'giro2' | 'desenlace';
 
+// Guarda el titulo y las propuestas aprobadas para evaluar continuidad y mostrar el libreto final.
 interface ObraHistorial {
   titulo: string;
   intro: string;
@@ -16,7 +16,7 @@ interface ObraHistorial {
   desenlace: string;
 }
 
-// Interfaz para controlar el tiempo por separado de cada acto
+// Duracion configurable, en segundos, de cada fase del ejercicio.
 interface TiemposConfig {
   intro: number;
   giro1: number;
@@ -24,12 +24,17 @@ interface TiemposConfig {
   desenlace: number;
 }
 
+/**
+ * Pagina principal del juego Impro60.
+ * Coordina configuracion, generacion de titulo, grabacion de voz, evaluacion por IA
+ * y navegacion entre los cuatro actos hasta construir el libreto final.
+ */
 export default function ImproPage() {
-  // Configuración de los controles iniciales
+  // Estado de configuracion inicial que decide como se genera el titulo y el nivel de reto.
   const [modalidad, setModalidad] = useState<string>('inicio de impro');
   const [dificultad, setDificultad] = useState<string>('media');
   
-  // ⏱️ Estado para los tiempos independientes por cada fase
+  // Tiempos independientes por fase; se usan al arrancar, reintentar o avanzar de acto.
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>({
     intro: 20,
     giro1: 15,
@@ -37,7 +42,7 @@ export default function ImproPage() {
     desenlace: 10
   }); 
 
-  // Estados del flujo y fases
+  // Estado principal de la partida: fase activa, pantalla visible, IA, temporizador y feedback.
   const [faseActual, setFaseActual] = useState<FaseActo>('intro');
   const [pantalla, setPantalla] = useState<'config' | 'jugando' | 'feedback' | 'final'>('config');
   const [titulo, setTitulo] = useState<string>('');
@@ -49,7 +54,7 @@ export default function ImproPage() {
   const [aprobadoPorDirector, setAprobadoPorDirector] = useState<boolean>(false);
   const [escuchando, setEscuchando] = useState<boolean>(false); 
   
-  // Guardado estructurado de la obra completa
+  // Libreto acumulado: solo se actualiza cuando el Director aprueba la propuesta de una fase.
   const [obra, setObra] = useState<ObraHistorial>({
     titulo: '',
     intro: '',
@@ -60,14 +65,18 @@ export default function ImproPage() {
 
   const [titulos, setTitulos] = useState<string[]>([]);
 
-  // Referencias para temporizador y grabación de Audio nativo
+  // Referencias mutables para recursos externos que no deben recrearse en cada render.
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fragmentosAudioRef = useRef<Blob[]>([]);
   const flujoAudioRef = useRef<MediaStream | null>(null);
   const esBotonFinalizarRef = useRef<boolean>(false);
 
-  // ⏱️ TEMPORIZADOR DE LA ESCENA
+  /*
+   * Cuenta atras de la pantalla de juego.
+   * Mientras hay tiempo, programa el siguiente segundo; al llegar a cero, detiene la grabacion
+   * y envia el audio a evaluacion, salvo que el cierre venga del boton manual.
+   */
   useEffect(() => {
     if (pantalla === 'jugando' && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -82,7 +91,7 @@ export default function ImproPage() {
     };
   }, [timeLeft, pantalla]);
 
-  // Limpieza de flujos de audio al desmontar
+  // Al desmontar la pagina, libera el microfono para que el navegador no deje pistas abiertas.
   useEffect(() => {
     return () => {
       if (flujoAudioRef.current) {
@@ -91,7 +100,9 @@ export default function ImproPage() {
     };
   }, []);
 
-  // Handler dinámico para cambiar los inputs de tiempo
+  /**
+   * Actualiza el tiempo de una fase concreta sin modificar el resto de la configuracion.
+   */
   const handleTiempoChange = (fase: FaseActo, valor: number) => {
     setTiemposConfig(prev => ({
       ...prev,
@@ -99,7 +110,11 @@ export default function ImproPage() {
     }));
   };
 
-  // 🎙️ FUNCIONES DE AUDIO NATIVO
+  /**
+   * Solicita permiso de microfono y arranca MediaRecorder.
+   * Los fragmentos se guardan en una ref para construir despues un Blob transcribible.
+   * Si el permiso falla, vuelve a la pantalla inicial porque no se puede jugar por voz.
+   */
   const iniciarGrabacionNativa = async () => {
     try {
       fragmentosAudioRef.current = []; 
@@ -125,6 +140,10 @@ export default function ImproPage() {
     }
   };
 
+  /**
+   * Cierra el temporizador y la grabacion actual, compone el audio capturado y lo manda al
+   * pipeline de transcripcion/evaluacion. Si no habia grabacion activa, evalua como silencio.
+   */
   const detenerGrabacionYProcesar = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setEscuchando(false);
@@ -146,6 +165,9 @@ export default function ImproPage() {
     }
   };
 
+  /**
+   * Devuelve el texto introductorio de la pantalla de configuracion segun la modalidad elegida.
+   */
   const getExplicacionInicial = (): string => {
     if (modalidad === 'inicio de impro') {
       return 'Construye una obra de improvisación completa por actos. Configura los tiempos de cada reto abajo (en segundos), asume tu rol ¡y que empiece el espectáculo!';
@@ -153,7 +175,10 @@ export default function ImproPage() {
     return '¡A improvisar por fases!';
   };
 
-  // 🚀 GENERAR TÍTULO E INICIAR FUNCIÓN (ACTO I)
+  /**
+   * Valida los tiempos, genera un titulo con Groq, reinicia el libreto y empieza el Acto I.
+   * Tambien conserva un historial de titulos para pedir variedad en futuras generaciones.
+   */
   const iniciarEjercicio = async (): Promise<void> => {
     if (tiemposConfig.intro <= 0 || tiemposConfig.giro1 <= 0 || tiemposConfig.giro2 <= 0 || tiemposConfig.desenlace <= 0) {
       alert("Por favor, introduce tiempos válidos (mayores a 0 segundos) para todos los actos.");
@@ -172,57 +197,58 @@ export default function ImproPage() {
 
     const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
 
-const promptTitulo = `
-[ROL]
-Eres un espectador real, gamberro, divertido y muy espontáneo en un show de comedia de improvisación teatral. Estás entre el público y gritas una frase ingeniosa para que los actores arranquen su escena desde una situación estimulante.
+    const promptTitulo = `
+    [ROL]
+    Eres un espectador real, gamberro, divertido y muy espontáneo en un show de comedia de improvisación teatral. Estás entre el público y gritas una frase ingeniosa para que los actores arranquen su escena desde una situación estimulante.
 
-[MISIÓN]
-Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español.
+    [MISIÓN]
+    Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español.
 
-[🚨 REGLA CRÍTICA DE ORTOGRAFÍA Y GRAMÁTICA]
-- Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación (como "mentiendo"). Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto (ej: "mintiendo", "cuenten", "vuelen"). 
+    [🚨 REGLA CRÍTICA DE ORTOGRAFÍA Y GRAMÁTICA]
+    - Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación (como "mentiendo"). Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto (ej: "mintiendo", "cuenten", "vuelen"). 
 
-[REGLAS DE ORO PARA EL TONO (NATURALIDAD TOTAL)]
-1. 🚨 PROHIBIDO EL TONO POÉTICO O METAFÓRICO: Evita palabras como "sol", "luna", "frágil", "alma", o frases filosóficas abstractas. Nadie grita poesía en un show de impro.
-2. 🚨 FRASES DE PÚBLICO REAL: Debe sonar a algo que un espectador grita con energía, un chisme, una orden, una acusación, una queja o una confesión absurda.
-3. VARIEDAD SINTÁCTICA: Está prohibido que todas tus frases empiecen por "Mi perro...", "Mi jefe..." o "El vecino...". Usa preguntas, imperativos (órdenes), exclamaciones o pon el tiempo/lugar al principio.
+    [REGLAS DE ORO PARA EL TONO (NATURALIDAD TOTAL)]
+    1. 🚨 PROHIBIDO EL TONO POÉTICO O METAFÓRICO: Evita palabras como "sol", "luna", "frágil", "alma", o frases filosóficas abstractas. Nadie grita poesía en un show de impro.
+    2. 🚨 FRASES DE PÚBLICO REAL: Debe sonar a algo que un espectador grita con energía, un chisme, una orden, una acusación, una queja o una confesión absurda.
+    3. VARIEDAD SINTÁCTICA: Está prohibido que todas tus frases empiecen por "Mi perro...", "Mi jefe..." o "El vecino...". Usa preguntas, imperativos (órdenes), exclamaciones o pon el tiempo/lugar al principio.
 
-[FILTRO SEMÁNTICO (EVITAR REPETICIÓN)]
-- Historial de títulos ya jugados: [${historialTitulos}]
-🚨 REGLA DE ORO: No repitas conceptos, entornos ni palabras clave del historial. Si ya se usó una temática, salta a otra completamente distinta.
+    [FILTRO SEMÁNTICO (EVITAR REPETICIÓN)]
+    - Historial de títulos ya jugados: [${historialTitulos}]
+    🚨 REGLA DE ORO: No repitas conceptos, entornos ni palabras clave del historial. Si ya se usó una temática, salta a otra completamente distinta.
 
-🚨 FILTRO DE CONTENIDO:
-Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
+    🚨 FILTRO DE CONTENIDO:
+    Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
 
-[MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
-Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ejemplos reales:
+    [MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
+    Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ejemplos reales:
 
-- FACIL (Enredos cotidianos y órdenes directas):
-  * "¡Saca inmediatamente ese pato del coche!" (Una orden loca)
-  * "Mañana cerramos la fábrica de almohadas" (Una noticia bomba)
-  * "¿Quién ha metido los pantalones en el lavavajillas?" (Una bronca doméstica)
-  * "Por favor, devuélveme mis cejas postizas" (Una súplica ridícula)
+    - FACIL (Enredos cotidianos y órdenes directas):
+      * "¡Saca inmediatamente ese pato del coche!" (Una orden loca)
+      * "Mañana cerramos la fábrica de almohadas" (Una noticia bomba)
+      * "¿Quién ha metido los pantalones en el lavavajillas?" (Una bronca doméstica)
+      * "Por favor, devuélveme mis cejas postizas" (Una súplica ridícula)
 
-- MEDIO (Chismes, sospechas y situaciones incómodas):
-  * "Creo que el televisor nos está mintiendo" (Una sospecha absurda - ¡"mintiendo" con I!)
-  * "No debiste darle café a ese maniquí" (Un reproche divertido)
-  * "Ayer me persiguió un semáforo con prisa" (Una anécdota loca)
-  * "¿Desde cuándo los espaguetis tienen opiniones políticas?" (Una duda ridícula)
+    - MEDIO (Chismes, sospechas y situaciones incómodas):
+      * "Creo que el televisor nos está mintiendo" (Una sospecha absurda - ¡"mintiendo" con I!)
+      * "No debiste darle café a ese maniquí" (Un reproche divertido)
+      * "Ayer me persiguió un semáforo con prisa" (Una anécdota loca)
+      * "¿Desde cuándo los espaguetis tienen opiniones políticas?" (Una duda ridícula)
 
-- DIFICIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
-  * "Si parpadeas, el pasillo se hace largo" (Una advertencia misteriosa)
-  * "Cuidado con los tomates, huelen el miedo" (Un peligro absurdo)
-  * "Tu doble de acción está cobrando más que tú" (Un chisme de camerinos)
-  * "Creo que nos está vigilando el panadero" (Una paranoia divertida)
+    - DIFICIL (Secretos absurdos, conspiraciones cotidianas y exageraciones):
+      * "Si parpadeas, el pasillo se hace largo" (Una advertencia misteriosa)
+      * "Cuidado con los tomates, huelen el miedo" (Un peligro absurdo)
+      * "Tu doble de acción está cobrando más que tú" (Un chisme de camerinos)
+      * "Creo que nos está vigilando el panadero" (Una paranoia divertida)
 
-[CONTROL DE CALIDAD FINAL - ANTES DE CONTESTAR]
-Revisa tu frase antes de soltarla: ¿Las palabras existen y están bien escritas en castellano? ¿Suena natural? ¿La gritaría alguien del público en un teatro para reírse? ¿Tiene entre 4 y 7 palabras? Si suena a poesía o tiene dudas ortográficas, bórrala y genera otra.
+    [CONTROL DE CALIDAD FINAL - ANTES DE CONTESTAR]
+    Revisa tu frase antes de soltarla: ¿Las palabras existen y están bien escritas en castellano? ¿Suena natural? ¿La gritaría alguien del público en un teatro para reírse? ¿Tiene entre 4 y 7 palabras? Si suena a poesía o tiene dudas ortográficas, bórrala y genera otra.
 
-[FORMATO DE SALIDA CRÍTICO]
-Devuelve ÚNICAMENTE las palabras de la frase. 
-Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones o explicaciones.
+    [FORMATO DE SALIDA CRÍTICO]
+    Devuelve ÚNICAMENTE las palabras de la frase. 
+    Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones o explicaciones.
 
-Frase final:`;
+    Frase final:
+    `;
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -256,7 +282,11 @@ Frase final:`;
     }
   };
 
-  // 🧠 PIPELINE DE IA PARA AUDIO Y DICTAMEN EN JSON EN LAS DIFERENTES FASES
+  /**
+   * Transcribe el audio del acto con Whisper y pide al Director una decision JSON.
+   * Si no hay voz util, envia [SIN_RESPUESTA] para forzar rechazo; si se aprueba, guarda
+   * la propuesta en la fase actual del libreto.
+   */
   const procesarFaseConWhisperYDirector = async (audioBlob: Blob | null) => {
     setLoading(true);
     setPantalla('feedback');
@@ -310,7 +340,8 @@ Frase final:`;
 
     setTextoUsuario(transcripcionFinal);
     const propuestaFinal = transcripcionFinal !== "" ? transcripcionFinal : '[SIN_RESPUESTA]';
-// Configurar instrucciones del Director dinámicamente según la fase/acto actual
+
+    // Criterios del Director para la fase actual; cada fase exige una funcion dramatica distinta.
     let consignasEspecificas = '';
     
     if (faseActual === 'intro') {
@@ -402,11 +433,19 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     }
   };
 
+  /**
+   * Marca que el usuario cerro el acto manualmente y reutiliza el mismo cierre de grabacion.
+   * La marca evita que el temporizador intente procesar la escena una segunda vez.
+   */
   const clickBotonTerminarManual = () => {
     esBotonFinalizarRef.current = true;
     detenerGrabacionYProcesar();
   };
 
+  /**
+   * Avanza al siguiente acto aprobado, carga su tiempo y reactiva el microfono.
+   * Al aprobar el desenlace, cambia a la pantalla final con el libreto completo.
+   */
   const avanzarSiguienteFase = async () => {
     esBotonFinalizarRef.current = false;
     setTextoUsuario('');
@@ -432,6 +471,10 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     }
   };
 
+  /**
+   * Repite solo la fase actual: limpia texto y feedback, restaura el tiempo de esa fase
+   * y vuelve a abrir la grabacion.
+   */
   const reintentarActoActual = async () => {
     esBotonFinalizarRef.current = false;
     setTextoUsuario('');
@@ -443,6 +486,10 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
     setTimeout(() => iniciarGrabacionNativa(), 100);
   };
 
+  /**
+   * Devuelve la experiencia a configuracion inicial. Mantiene el historial de titulos para
+   * evitar repeticiones en la siguiente obra.
+   */
   const reiniciarTeatroCompleto = (): void => {
     setTitulo('');
     setFaseActual('intro');
@@ -502,7 +549,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
   return (
     <div className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
-        <h1>🎭 ¡Impro60! 🎬</h1>
+        <h1>🎭 ¡Impro 60! 🎬</h1>
         <p className={styles.subtitulo}>
           {pantalla === 'config' ? '¡Saca un título y construye tu historia!' : `Fase Actual: Acto de ${faseActual.toUpperCase()}`}
         </p>
@@ -515,7 +562,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
           </div>
         )}
 
-        {/* PANTALLA 1: CONFIGURACIÓN CON DISEÑO UNIFICADO */}
         {pantalla === 'config' && (
           <div className={styles.bloqueConfig}>
             <div className={styles.recuadroExplicativo}>
@@ -524,73 +570,68 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
             </div>
             
             <br/>
-            {/* Todos los controles agrupados dentro del mismo bloque .controles-group original */}
-<div className={styles.controlesGroup} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-  
-  {/* Fila superior: Selector de dificultad a ancho completo */}
-  <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-    Dificultad
-    <select className={styles.selectStyle} value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
-      <option value="facil">Fácil (Cotidiano)</option>
-      <option value="media">Medio (Interesante)</option>
-      <option value="dificil">Difícil (Locura)</option>
-    </select>
-  </label>
+            <div className={styles.controlesGroup} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                Dificultad
+                <select className={styles.selectStyle} value={dificultad} onChange={(e) => setDificultad(e.target.value)}>
+                  <option value="facil">Fácil (Cotidiano)</option>
+                  <option value="media">Medio (Interesante)</option>
+                  <option value="dificil">Difícil (Locura)</option>
+                </select>
+              </label>
 
-  {/* Sub-rejilla: 2 columnas para que los timers ocupen solo 2 filas en total */}
-  <div style={{ 
-    display: 'grid', 
-    // Esto fuerza 2 columnas iguales siempre, independientemente del tamaño
-    gridTemplateColumns: '1fr 1fr', 
-    gap: '12px', 
-    width: '100%' 
-  }}>
-    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
-      <span>⏱️ Inicio</span>
-      <input 
-        type="number" 
-        className={styles.inputTiempoNumber}
-        value={tiemposConfig.intro} 
-        min={1} max={300}
-        onChange={(e) => handleTiempoChange('intro', Number(e.target.value))}
-      />
-    </label>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '12px', 
+                width: '100%' 
+              }}>
+                <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+                  <span>⏱️ Inicio</span>
+                  <input 
+                    type="number" 
+                    className={styles.inputTiempoNumber}
+                    value={tiemposConfig.intro} 
+                    min={1} max={300}
+                    onChange={(e) => handleTiempoChange('intro', Number(e.target.value))}
+                  />
+                </label>
 
-    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
-      <span>⚡ 1er Giro</span>
-      <input 
-        type="number" 
-        className={styles.inputTiempoNumber}
-        value={tiemposConfig.giro1} 
-        min={1} max={300}
-        onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))}
-      />
-    </label>
+                <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+                  <span>⚡ 1er Giro</span>
+                  <input 
+                    type="number" 
+                    className={styles.inputTiempoNumber}
+                    value={tiemposConfig.giro1} 
+                    min={1} max={300}
+                    onChange={(e) => handleTiempoChange('giro1', Number(e.target.value))}
+                  />
+                </label>
 
-    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
-      <span>🔥 2do Giro</span>
-      <input 
-        type="number" 
-        className={styles.inputTiempoNumber}
-        value={tiemposConfig.giro2} 
-        min={1} max={300}
-        onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))}
-      />
-    </label>
+                <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+                  <span>🔥 2do Giro</span>
+                  <input 
+                    type="number" 
+                    className={styles.inputTiempoNumber}
+                    value={tiemposConfig.giro2} 
+                    min={1} max={300}
+                    onChange={(e) => handleTiempoChange('giro2', Number(e.target.value))}
+                  />
+                </label>
 
-    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
-      <span>🏁 Desenlace</span>
-      <input 
-        type="number" 
-        className={styles.inputTiempoNumber}
-        value={tiemposConfig.desenlace} 
-        min={1} max={300}
-        onChange={(e) => handleTiempoChange('desenlace', Number(e.target.value))}
-      />
-    </label>
-  </div>
+                <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
+                  <span>🏁 Desenlace</span>
+                  <input 
+                    type="number" 
+                    className={styles.inputTiempoNumber}
+                    value={tiemposConfig.desenlace} 
+                    min={1} max={300}
+                    onChange={(e) => handleTiempoChange('desenlace', Number(e.target.value))}
+                  />
+                </label>
+              </div>
 
-</div>
+            </div>
 
             <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} style={{ marginTop: '25px' }} onClick={iniciarEjercicio} disabled={loading}>
               {loading ? 'Afinando el libreto...' : '¡Subir el Telón! 🚀'}
@@ -598,7 +639,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
           </div>
         )}
 
-        {/* PANTALLA 2: JUGANDO */}
         {pantalla === 'jugando' && (
           <div className={styles.bloqueJuego}>
             <div className={styles.recuadroExplicativo} style={{ marginBottom: '15px', backgroundColor: 'rgba(255,255,255,0.05)' }}>
@@ -646,7 +686,6 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido. No uses bloques markdown, no use
           </div>
         )}
 
-        {/* PANTALLA 3: FEEDBACK DINÁMICO */}
         {pantalla === 'feedback' && (
           <div className={styles.bloqueFeedback}>
             <div className={styles.recuadroTuTexto}>
