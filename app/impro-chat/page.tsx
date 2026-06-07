@@ -9,37 +9,47 @@ interface MensajeChat {
   content: string;
 }
 
-// 🎭 1. Simplificación a 3 Estados Clásicos
+// Estructura dramatica de la partida conversacional: planteamiento, desarrollo y cierre.
 type FaseActo = 'intro' | 'nudo' | 'desenlace';
 
+// Duracion configurable, en segundos, de cada fase del ejercicio.
 interface TiemposConfig {
   intro: number;
   nudo: number;
   desenlace: number;
 }
 
+// Resultado que deja el Director al evaluar un acto ya terminado.
 interface EvaluacionActo {
   aprobado: boolean;
   comentario: string;
   transcripcionAcumulada: string;
 }
 
+// Informe completo de la obra; cada acto empieza pendiente y se rellena al cambiar de fase.
 interface InformeDirector {
   intro: EvaluacionActo | null;
   nudo: EvaluacionActo | null;
   desenlace: EvaluacionActo | null;
 }
 
+/**
+ * Pagina del modo conversacional de improvisacion.
+ * Coordina una escena hablada con la IA: genera titulo, graba turnos de voz, transcribe,
+ * responde con un co-actor sintetizado y evalua cada acto al pasar de fase.
+ */
 export default function ImproChatPage() {
+  // Configuracion inicial que condiciona la generacion del titulo y el tono de la escena.
   const [dificultad, setDificultad] = useState<string>('media');
-  
-  // ⏱️ Ajuste de tiempos por defecto para los 3 actos
+
+  // Tiempos independientes de los tres actos; el nudo concentra los dos giros dramaticos.
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>({
     intro: 60,
-    nudo: 240, // Suma del tiempo anterior o el que consideres ideal
+    nudo: 240,
     desenlace: 60
   });
 
+  // Detector simple de voz: mide volumen para distinguir silencio real de audio util.
   const dectectorVozRef = useRef<{
     audioContext: AudioContext | null;
     analyser: AnalyserNode | null;
@@ -47,42 +57,54 @@ export default function ImproChatPage() {
     habloAlMenosUnaVez: boolean;
   }>({ audioContext: null, analyser: null, intervalo: null, habloAlMenosUnaVez: false });
 
+  // Estado principal de pantalla, fase, titulo e historial visible de la conversacion.
   const [pantalla, setPantalla] = useState<'config' | 'jugando' | 'final'>('config');
   const [faseActual, setFaseActual] = useState<FaseActo>('intro');
   const [titulo, setTitulo] = useState<string>('');
   const [historialLetra, setHistorialLetra] = useState<MensajeChat[]>([]);
   const [titulos, setTitulos] = useState<string[]>([]);
-  
+
+  // Estado de actividad de la app: llamadas a IA, cuenta atras, microfono y voz sintetica.
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingTexto, setLoadingTexto] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [escuchando, setEscuchando] = useState<boolean>(false);
   const [iaHablando, setIaHablando] = useState<boolean>(false);
 
+  // Evaluaciones acumuladas que se mostraran en el informe final.
   const [informeFinal, setInformeFinal] = useState<InformeDirector>({
     intro: null,
     nudo: null,
     desenlace: null
   });
 
+  // Ultima nota del Director, fijada en pantalla durante el acto siguiente.
   const [ultimoFeedbackFijo, setUltimoFeedbackFijo] = useState<{ fase: string; texto: string; aprobado: boolean } | null>(null);
 
+  // Recursos externos que viven entre renders: temporizador, grabador y flujo de microfono.
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fragmentosAudioRef = useRef<Blob[]>([]);
   const flujoAudioRef = useRef<MediaStream | null>(null);
-  
+
+  // Transcripcion acumulada solo del acto actual, usada para evaluar al cambiar de fase.
   const textoAcumuladoActoRef = useRef<string[]>([]);
-  
+
+  // Copias sincronas del estado para callbacks asincronos que pueden ejecutarse tras renders.
   const pantallaRef = useRef<'config' | 'jugando' | 'final'>('config');
   const faseActualRef = useRef<FaseActo>('intro');
   const historialLetraRef = useRef<MensajeChat[]>([]);
 
+  // Mantiene las refs alineadas con React state para callbacks que no deben leer valores antiguos.
   useEffect(() => { pantallaRef.current = pantalla; }, [pantalla]);
   useEffect(() => { faseActualRef.current = faseActual; }, [faseActual]);
   useEffect(() => { historialLetraRef.current = historialLetra; }, [historialLetra]);
 
-  // ⏱️ CRONÓMETRO POR ACTOS
+  /*
+   * Cronometro de fase.
+   * Mientras la partida esta en juego resta un segundo; cuando llega a cero, cierra el
+   * acto actual y dispara su evaluacion antes de preparar el siguiente.
+   */
   useEffect(() => {
     if (pantalla === 'jugando' && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -92,6 +114,7 @@ export default function ImproChatPage() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [timeLeft, pantalla]);
 
+  // Limpia microfono y voz sintetica al salir de la pagina.
   useEffect(() => {
     return () => {
       liberarMicrofono();
@@ -99,7 +122,7 @@ export default function ImproChatPage() {
     };
   }, []);
 
-  // 📡 PRECARGA DE VOCES NATURALES DEL SISTEMA
+  // Precarga las voces del navegador para elegir una voz espanola mas natural al responder.
   useEffect(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.getVoices();
@@ -109,6 +132,9 @@ export default function ImproChatPage() {
     }
   }, []);
 
+  /**
+   * Detiene todas las pistas del microfono y borra la referencia al stream activo.
+   */
   const liberarMicrofono = () => {
     if (flujoAudioRef.current) {
       flujoAudioRef.current.getTracks().forEach(track => track.stop());
@@ -116,10 +142,18 @@ export default function ImproChatPage() {
     }
   };
 
+  /**
+   * Cambia el tiempo de un acto concreto sin tocar el resto de la configuracion.
+   */
   const handleTiempoChange = (fase: FaseActo, valor: number) => {
     setTiemposConfig(prev => ({ ...prev, [fase]: valor }));
   };
 
+  /**
+   * Arranca la grabacion del turno del usuario.
+   * Reutiliza un stream existente si lo hay, crea MediaRecorder y activa el detector de
+   * volumen para saber si el usuario hablo al menos una vez antes de enviar a Whisper.
+   */
   const iniciarGrabacionNativa = async (streamExistente?: MediaStream) => {
     if (pantallaRef.current !== 'jugando') return;
     try {
@@ -133,7 +167,7 @@ export default function ImproChatPage() {
       const opciones = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : undefined;
       const mediaRecorder = new MediaRecorder(stream, opciones);
       mediaRecorderRef.current = mediaRecorder;
-      
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           fragmentosAudioRef.current.push(e.data);
@@ -142,7 +176,7 @@ export default function ImproChatPage() {
 
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
-      
+
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
@@ -159,9 +193,9 @@ export default function ImproChatPage() {
         intervalo: setInterval(() => {
           const bufferDatos = new Uint8Array(analyser.frequencyBinCount);
           analyser.getByteFrequencyData(bufferDatos);
-          
+
           const promedioVolumen = bufferDatos.reduce((a, b) => a + b, 0) / bufferDatos.length;
-          
+
           if (promedioVolumen > 10) {
             dectectorVozRef.current.habloAlMenosUnaVez = true;
           }
@@ -176,11 +210,15 @@ export default function ImproChatPage() {
     }
   };
 
+  /**
+   * Finaliza la grabacion del turno, descarta audio demasiado corto o silencioso y manda
+   * el Blob valido al flujo conversacional. Si no hay voz util, procesa un turno vacio.
+   */
   const detenerGrabacionYProcesar = async () => {
     if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') {
       return;
     }
-    
+
     setEscuchando(false);
     const mimeTypeUsado = mediaRecorderRef.current.mimeType;
 
@@ -188,6 +226,10 @@ export default function ImproChatPage() {
     if (intervalo) clearInterval(intervalo);
     if (audioContext && audioContext.state !== 'closed') audioContext.close();
 
+    /**
+     * Espera al evento onstop de MediaRecorder y devuelve un Blob solo si supera los
+     * umbrales minimos de tamano o deteccion de voz.
+     */
     const obtenerBlobAudio = () => {
       return new Promise<Blob | null>((resolve) => {
         if (!mediaRecorderRef.current) return resolve(null);
@@ -209,17 +251,21 @@ export default function ImproChatPage() {
             resolve(null);
           }
         };
-        
+
         mediaRecorderRef.current.stop();
       });
     };
 
     const audioBlobListo = await obtenerBlobAudio();
-    fragmentosAudioRef.current = []; 
+    fragmentosAudioRef.current = [];
 
     await procesarTurnoConversacional(audioBlobListo);
   };
 
+  /**
+   * Lee en voz alta la respuesta del co-actor IA.
+   * Pausa la escucha mientras habla y ejecuta el callback al terminar o si falla la sintesis.
+   */
   const reproducirVozIA = async (texto: string, callbackAlTerminar: () => void) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       console.warn("SpeechSynthesis no está soportado.");
@@ -231,20 +277,24 @@ export default function ImproChatPage() {
     setIaHablando(true);
     setEscuchando(false);
 
+    /**
+     * Escoge una voz espanola disponible, evitando voces poco naturales conocidas y
+     * priorizando motores neural/natural cuando el navegador los expone.
+     */
     const obtenerVozHumanaSinHelena = (): SpeechSynthesisVoice | null => {
       const voces = window.speechSynthesis.getVoices();
       if (voces.length === 0) return null;
 
-      const vocesPermitidas = voces.filter(v => 
+      const vocesPermitidas = voces.filter(v =>
         v.lang.startsWith('es') && !v.name.toLowerCase().includes('helena')
       );
 
-      const premium = vocesPermitidas.find(v => 
+      const premium = vocesPermitidas.find(v =>
         v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural')
       );
       if (premium) return premium;
 
-      const alternativaLocal = vocesPermitidas.find(v => 
+      const alternativaLocal = vocesPermitidas.find(v =>
         v.name.includes('Mónica') || v.name.includes('Jorge') || v.name.includes('Microsoft')
       );
       if (alternativaLocal) return alternativaLocal;
@@ -263,8 +313,8 @@ export default function ImproChatPage() {
         utterance.lang = 'es-ES';
       }
 
-      utterance.rate = 1.15;  
-      utterance.pitch = 1.0;  
+      utterance.rate = 1.15;
+      utterance.pitch = 1.0;
 
       utterance.onend = () => {
         setIaHablando(false);
@@ -281,6 +331,10 @@ export default function ImproChatPage() {
     }, 60);
   };
 
+  /**
+   * Solicita permisos de microfono, genera un titulo inicial con Groq y pone en marcha
+   * el primer acto con grabacion activa.
+   */
   const iniciarEjercicio = async () => {
     let streamInicial: MediaStream | null = null;
     try {
@@ -309,7 +363,7 @@ Eres un espectador real, gamberro, divertido y muy espontáneo en un show de com
 Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español.
 
 [🚨 REGLA CRÍTICA DE ORTOGRAFÍA Y GRAMÁTICA]
-- Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación (como "mentiendo"). Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto (ej: "mintiendo", "cuenten", "vuelen"). 
+- Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación (como "mentiendo"). Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto (ej: "mintiendo", "cuenten", "vuelen").
 
 [REGLAS DE ORO PARA EL TONO (NATURALIDAD TOTAL)]
 1. 🚨 PROHIBIDO EL TONO POÉTICO O METAFÓRICO: Evita palabras como "sol", "luna", "frágil", "alma", o frases filosóficas abstractas. Nadie grita poesía en un show de impro.
@@ -343,7 +397,7 @@ Fuerza a tu lógica a imitar la estructura y la perfecta ortografía de estos ej
 Revisa tu frase antes de soltarla.
 
 [FORMATO DE SALIDA CRÍTICO]
-Devuelve ÚNICAMENTE las palabras de la frase. 
+Devuelve ÚNICAMENTE las palabras de la frase.
 Está PROHIBIDO incluir comillas ("), puntos finales (.), introducciones o explicaciones.
 
 Frase final:`;
@@ -365,7 +419,7 @@ Frase final:`;
       setTimeLeft(tiemposConfig.intro);
       setPantalla('jugando');
       setLoading(false);
-      
+
       setTimeout(() => { iniciarGrabacionNativa(streamInicial!); }, 100);
     } catch (error) {
       console.error(error);
@@ -375,6 +429,10 @@ Frase final:`;
     }
   };
 
+  /**
+   * Procesa un turno completo del usuario: transcribe audio con Whisper, filtra
+   * alucinaciones tipicas de silencio, actualiza el historial y pide la replica del co-actor.
+   */
   const procesarTurnoConversacional = async (audioBlob: Blob | null) => {
     if (pantallaRef.current !== 'jugando') return;
     setLoading(true);
@@ -388,25 +446,28 @@ Frase final:`;
 
     if (audioBlob) {
       try {
-        let tipoLimpio = audioBlob.type.split(';')[0]; 
+        let tipoLimpio = audioBlob.type.split(';')[0];
         let extension = tipoLimpio.includes('mp4') || tipoLimpio.includes('m4a') ? 'm4a' : 'webm';
         const archivoAudio = new File([audioBlob], `impro.${extension}`, { type: tipoLimpio });
-        
+
         const respuestaWhisper = await groq.audio.transcriptions.create({
-          file: archivoAudio, 
-          model: 'whisper-large-v3', 
-          language: 'es', 
+          file: archivoAudio,
+          model: 'whisper-large-v3',
+          language: 'es',
           temperature: 0.0,
-          prompt: "." 
+          prompt: "."
         });
-        
+
         let textoCrudo = respuestaWhisper.text?.trim() || '';
-        
+
+        /**
+         * Detecta textos fantasma frecuentes de Whisper cuando el audio es silencio o ruido.
+         */
         const esAlucinacionAudio = (texto: string) => {
           const normalizado = texto.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?¡¿]/g, "").trim();
           const patronesFantasmas = [
-            /^gracias$/, /^gracias por ver$/, /^gracias por ver el video$/, 
-            /^subtitulos$/, /^subtitulado$/, /^reproduccion$/, /^amén$/, 
+            /^gracias$/, /^gracias por ver$/, /^gracias por ver el video$/,
+            /^subtitulos$/, /^subtitulado$/, /^reproduccion$/, /^amén$/,
             /^oiga$/, /^mira$/, /^reproducir$/, /^por ver$/, /^todos$/
           ];
           if (normalizado.length <= 2) return true;
@@ -419,8 +480,8 @@ Frase final:`;
           transcripcionUsuario = textoCrudo;
         }
 
-      } catch (err) { 
-        console.error("Error en Whisper:", err); 
+      } catch (err) {
+        console.error("Error en Whisper:", err);
       }
     }
 
@@ -437,8 +498,8 @@ Frase final:`;
 const response = await groq.chat.completions.create({
   model: 'llama-3.1-8b-instant',
   messages: [
-    { 
-      role: 'system', 
+    {
+      role: 'system',
       content: `ERES UN ACTOR DE IMPROVISACIÓN Y GUARDÍAN DEL GUION:
 - TU MEMORIA ES LA ESCENA: Debes leer TODO el ${JSON.stringify(nuevoHistorial)} para decidir qué decir.
 - INTEGRACIÓN TOTAL: Tu respuesta debe conectar lógica y narrativamente con los eventos ocurridos al inicio de la escena.
@@ -455,11 +516,11 @@ REGLAS DE ORO:
 - Di tus frases tal cual, sin nombres de personajes ni guiones.
 - MÁXIMO 20 PALABRAS.
 - PROHIBIDO narrar acciones, sentimientos o descripciones.
-- CERO PUNTUACIÓN DE GUION: Prohibido usar asteriscos, paréntesis o corchetes.` 
+- CERO PUNTUACIÓN DE GUION: Prohibido usar asteriscos, paréntesis o corchetes.`
     },
     ...nuevoHistorial
   ],
-  temperature: 0.6, // Ligeramente más bajo para mayor rigidez lógica
+  temperature: 0.6,
   max_tokens: 60,
 });
 
@@ -479,11 +540,14 @@ REGLAS DE ORO:
     }
   };
 
-  // 🔄 2. Transiciones de la Máquina de Estados (De 4 saltos a 3)
+  /**
+   * Cierra el acto actual, lanza su evaluacion en segundo plano y prepara la siguiente fase.
+   * Si termina el desenlace, detiene la funcion y muestra el informe.
+   */
   const avanzarFaseEstructural = () => {
     const faseTerminada = faseActual;
     const textoDelActo = textoAcumuladoActoRef.current.join(' ');
-    
+
     ejecutarEvaluacionDirectorEnBackstage(faseTerminada, textoDelActo);
 
     textoAcumuladoActoRef.current = [];
@@ -500,21 +564,25 @@ REGLAS DE ORO:
       finalizarFuncionYMostrarInforme();
     }
   };
-  
-  // 📋 3. Reconfiguración de los Criterios de Evaluación del Director
+
+  /**
+   * Evalua un acto ya terminado con el Director IA.
+   * Construye criterios segun la fase, parsea una respuesta JSON y guarda el resultado en
+   * el informe final y en la nota fija que se muestra durante el siguiente acto.
+   */
   const ejecutarEvaluacionDirectorEnBackstage = async (fase: FaseActo, textoActor: string) => {
     const apiKey = process.env.NEXT_PUBLIC_API_KEY;
     if (!apiKey || apiKey.trim() === "") {
       console.error("Falta la API Key para la evaluación.");
       return;
     }
-    
-    const groq = new OpenAI({ 
-      apiKey: apiKey.trim(), 
-      baseURL: "https://api.groq.com/openai/v1", 
-      dangerouslyAllowBrowser: true 
+
+    const groq = new OpenAI({
+      apiKey: apiKey.trim(),
+      baseURL: "https://api.groq.com/openai/v1",
+      dangerouslyAllowBrowser: true
     });
-    
+
     const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
 
     let consignasEspecificas = '';
@@ -524,16 +592,15 @@ REGLAS DE ORO:
 - Para otorgar "aprobado": true, el actor debe haber propuesto una premisa, acción, personaje o conflicto que guarde una relación lógica, cómica o temática con el título "${titulo}".
 - No exijas genialidad artística: si el texto continúa, expande o se inspira coherentemente en el universo del título, dalo por bueno.
 🚨 REGLA DE RECHAZO CRÍTICA: Si el usuario evade el título por completo, dice sinsentidos inconexos o un saludo básico, debes poner "aprobado": false de inmediato.`;
-      
+
     } else if (faseActual === 'nudo') {
-      // ⚡ COMBINACIÓN DE LOS DOS PUNTOS DE GIRO EN EL NUDO
       consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN DEL NUDO:
 - Analiza minuciosamente todo el bloque del libreto en este acto.
-- CRITERIO CRÍTICO EXIGIDO: El actor debe haber introducido o reaccionado dinámicamente a DOS PUNTOS DE GIRO DISTINTOS durante este bloque. 
+- CRITERIO CRÍTICO EXIGIDO: El actor debe haber introducido o reaccionado dinámicamente a DOS PUNTOS DE GIRO DISTINTOS durante este bloque.
   * GIRO 1: Una revelación, secreto, imprevisto o cambio repentino de dirección sobre lo planteado en la introducción.
   * GIRO 2: Un incremento de la complicación, factor contrarreloj, amenaza absurda o elemento límite de presión que vuelva caótico el conflicto.
 - Para otorgar "aprobado": true, debes ver reflejada en la interacción del actor esta doble evolución en la trama. Si la escena se estancó de forma plana en un solo chiste, repite la introducción o carece de estos giros, debes poner "aprobado": false.`;
-      
+
     } else if (faseActual === 'desenlace') {
       consignasEspecificas = `OBJETIVO DE LA EVALUACIÓN:
 - Analiza ÚNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
@@ -550,7 +617,7 @@ REGLAS DE ORO:
         Eres un Director de teatro de improvisación hiperactivo, técnico, apasionado y muy exigente. Hablas siempre utilizando jerga teatral ("¡Arriba el telón!", "¡Falta ritmo!", "¡Puro drama!", "¡Eso es actuar!").
 
         [MISIÓN DE ANÁLISIS]
-        Tu único trabajo es juzgar si el desempeño del ACTOR (Usuario) dentro del transcurso del acto cumple con el objetivo técnico solicitado. 
+        Tu único trabajo es juzgar si el desempeño del ACTOR (Usuario) dentro del transcurso del acto cumple con el objetivo técnico solicitado.
 
         Evalúa su coherencia, su capacidad de propuesta y su adaptación al juego dramático basándote en el [LIBRETO REAL DEL ACTO] provisto abajo. El título y el hilo conversacional son contextos fijos para medir su rendimiento. Juzga al ACTOR, no al escenario.
 
@@ -579,11 +646,11 @@ REGLAS DE ORO:
         messages: [{ role: 'user', content: promptDirector }],
         temperature: 0.1,
         max_tokens: 150,
-        response_format: { type: "json_object" } 
+        response_format: { type: "json_object" }
       });
 
       const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
-      
+
       let resultado;
       try {
         resultado = JSON.parse(textoCrudo);
@@ -621,7 +688,7 @@ REGLAS DE ORO:
       setInformeFinal(prev => ({
         ...prev,
         [fase]: {
-          aprobado: true, 
+          aprobado: true,
           comentario: '¡El director asiente desde la oscuridad! El show debe continuar.',
           transcripcionAcumulada: propuestaFinal === '[SIN_RESPUESTA]' ? 'Sin intervención de voz.' : propuestaFinal
         }
@@ -629,12 +696,19 @@ REGLAS DE ORO:
     }
   };
 
+  /**
+   * Termina la partida: libera recursos de audio, cancela cualquier voz en curso y abre
+   * la pantalla de informe final.
+   */
   const finalizarFuncionYMostrarInforme = () => {
     liberarMicrofono();
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
     setPantalla('final');
   };
 
+  /**
+   * Restaura la experiencia a la configuracion inicial y apaga cualquier recurso activo.
+   */
   const reiniciarTeatroCompleto = () => {
     liberarMicrofono();
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
@@ -647,7 +721,6 @@ REGLAS DE ORO:
     setEscuchando(false);
   };
 
-  // 🎨 4. Renderizado de Pantalla de Feedback Final
   if (pantalla === 'final') {
     const actos = [
       { id: 'intro', nombre: 'Acto I: Introducción' },
@@ -671,12 +744,12 @@ REGLAS DE ORO:
             </div>
 
             <h3 style={{ borderBottom: '2px solid var(--color-telon)', paddingBottom: '5px', color: 'var(--color-telon)' }}>📖 Libreto Completo de la Función</h3>
-            <div style={{ 
-              backgroundColor: '#fdfbf7', 
-              padding: '15px', 
-              borderRadius: '6px', 
+            <div style={{
+              backgroundColor: '#fdfbf7',
+              padding: '15px',
+              borderRadius: '6px',
               border: '1px solid #e2d6b5',
-              maxHeight: '250px', 
+              maxHeight: '250px',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
@@ -731,7 +804,6 @@ REGLAS DE ORO:
     );
   }
 
-  // 🎨 5. Renderizado de Interfaz Principal de Juego y Configuración
   return (
     <div className={styles.teatroPageWrapper}>
       <div className={styles.teatroContainer}>
@@ -841,9 +913,9 @@ REGLAS DE ORO:
               </div>
 
               <div className={styles.panelAcciones}>
-                <button 
-                  className={`${styles.btnTeatro} ${styles.btnEnviar}`} 
-                  onClick={detenerGrabacionYProcesar} 
+                <button
+                  className={`${styles.btnTeatro} ${styles.btnEnviar}`}
+                  onClick={detenerGrabacionYProcesar}
                   disabled={!escuchando || loading || iaHablando}
                 >
                   {escuchando ? '🔔 Enviar' : 'Escuchando...'}
