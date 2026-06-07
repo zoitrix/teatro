@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../impro-base/base.module.css';
+import styles from './base.module.css';
 import { ConfigScreen } from './components/ConfigScreen';
 import { FeedbackScreen } from './components/FeedbackScreen';
 import { FinalScreen } from './components/FinalScreen';
