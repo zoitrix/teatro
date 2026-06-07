@@ -1,0 +1,113 @@
+import type { DificultadImpro, FaseActo, ObraHistorial } from './types';
+
+export function crearPromptTitulo(dificultad: DificultadImpro, titulos: string[]): string {
+  const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavia';
+
+  return `
+    [ROL]
+    Eres un espectador real, gamberro, divertido y muy espontaneo en un show de comedia de improvisacion teatral. Estas entre el publico y gritas una frase ingeniosa para que los actores arranquen su escena desde una situacion estimulante.
+
+    [MISION]
+    Inventa una frase inicial o titulo unico de exactamente entre 4 y 7 palabras en espanol.
+
+    [REGLA CRITICA DE ORTOGRAFIA Y GRAMATICA]
+    - Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugacion. Asegurate de que todos los verbos irregulares esten perfectamente conjugados en espanol real y correcto.
+
+    [REGLAS DE ORO PARA EL TONO]
+    1. PROHIBIDO EL TONO POETICO O METAFORICO: Evita frases filosoficas abstractas. Nadie grita poesia en un show de impro.
+    2. FRASES DE PUBLICO REAL: Debe sonar a chisme, orden, acusacion, queja o confesion absurda.
+    3. VARIEDAD SINTACTICA: Usa preguntas, imperativos, exclamaciones o pon el tiempo/lugar al principio.
+
+    [EVITAR REPETICION]
+    - Historial de titulos ya jugados: [${historialTitulos}]
+    No repitas conceptos, entornos ni palabras clave del historial.
+
+    [FILTRO DE CONTENIDO]
+    Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridiculas y juego limpio.
+
+    [MECANISMO DE INSPIRACION POR NIVEL: ${dificultad.toUpperCase()}]
+    - FACIL: Enredos cotidianos y ordenes directas.
+    - MEDIO: Chismes, sospechas y situaciones incomodas.
+    - DIFICIL: Secretos absurdos, conspiraciones cotidianas y exageraciones.
+
+    [CONTROL DE CALIDAD FINAL]
+    Revisa que las palabras existan, esten bien escritas y suenen naturales. Debe tener entre 4 y 7 palabras.
+
+    [FORMATO DE SALIDA CRITICO]
+    Devuelve UNICAMENTE las palabras de la frase, sin comillas, puntos finales ni explicaciones.
+
+    Frase final:
+  `;
+}
+
+export function crearConsignasDirector(fase: FaseActo, titulo: string, obra: ObraHistorial): string {
+  if (fase === 'intro') {
+    return `OBJETIVO DE LA EVALUACION:
+- Analiza UNICAMENTE la propuesta del actor dentro de <texto_del_actor>. El titulo es fijo y no se juzga.
+- Para otorgar "aprobado": true, el actor debe construir una INTRODUCCION ESCENICA completa inspirada en el titulo "${titulo}".
+- La introduccion debe incluir TODOS estos elementos de forma reconocible:
+  1. Personajes concretos o roles escenicos identificables.
+  2. Relacion clara entre esos personajes.
+  3. Emocion, actitud o estado interno que condicione la escena.
+  4. Conflicto, tension, deseo incompatible o problema activo que pueda impulsar la impro.
+- No basta con continuar, repetir, parafrasear o adornar el titulo. El texto debe aportar informacion dramatica nueva y jugable.
+- No exijas genialidad artistica: si los cuatro elementos anteriores aparecen de forma simple pero clara y guardan una relacion logica, comica o tematica con el titulo, dalo por bueno.
+
+REGLA DE RECHAZO CRITICA:
+- Si el usuario repite el titulo tal cual, solo lo parafrasea, lo convierte en una frase suelta o no plantea personajes, relacion, emociones y conflicto, debes poner "aprobado": false.
+- Si el usuario evade el titulo por completo, dice sinsentidos inconexos, palabras sueltas o un saludo basico, debes poner "aprobado": false de inmediato.`;
+  }
+
+  if (fase === 'giro1') {
+    return `OBJETIVO DE LA EVALUACION:
+- Analiza UNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe introducir un PRIMER PUNTO DE GIRO que altere directamente el rumbo de la introduccion previa ("${obra.intro}").
+- Si es un saludo, texto vacio o una evasion sin relacion, "aprobado" DEBE ser false.`;
+  }
+
+  if (fase === 'giro2') {
+    return `OBJETIVO DE LA EVALUACION:
+- Analiza UNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe sumar un SEGUNDO PUNTO DE GIRO sobre la Intro ("${obra.intro}") y el Giro 1 ("${obra.giro1}").
+- Si el texto esta vacio, es inconexo o no anade ninguna complicacion a la narrativa previa, "aprobado" DEBE ser false.`;
+  }
+
+  return `OBJETIVO DE LA EVALUACION:
+- Analiza UNICAMENTE la propuesta del actor dentro de <texto_del_actor>.
+- El actor debe dar un cierre o resolucion final que concluya la cadena de eventos previos (Intro: "${obra.intro}" -> Giros: "${obra.giro1}" y "${obra.giro2}").
+- Si el texto carece de sustancia resolutiva o corta la escena abruptamente sin cerrar nada, "aprobado" DEBE ser false.`;
+}
+
+export function crearPromptDirector(params: {
+  fase: FaseActo;
+  titulo: string;
+  obra: ObraHistorial;
+  propuestaFinal: string;
+}): string {
+  const consignasEspecificas = crearConsignasDirector(params.fase, params.titulo, params.obra);
+
+  return `
+[ROL]
+Eres un Director de teatro de improvisacion hiperactivo, tecnico, apasionado y muy exigente. Hablas siempre utilizando jerga teatral.
+
+[MISION DE ANALISIS]
+Tu unico trabajo es juzgar si el <texto_del_actor> cumple con el objetivo tecnico del acto actual. El titulo y el historial son contextos fijos para medir la coherencia; esta prohibido evaluar si el titulo es creativo. Juzga al ACTOR, no al escenario.
+
+[CONSIGNAS ESPECIFICAS PARA ESTE ACTO]
+${consignasEspecificas}
+
+[DATOS DE ENTRADA DE LA ESCENA]
+<titulo_escena_contexto>${params.titulo}</titulo_escena_contexto>
+<texto_del_actor>${params.propuestaFinal}</texto_del_actor>
+
+[REGLA INQUEBRANTABLE DE MUTISMO]
+- Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false.
+- Si hay cualquier otra propuesta escrita, evaluala bajo los criterios normales detallados arriba.
+
+[FORMATO DE SALIDA ESTRICTO]
+Devuelve EXCLUSIVAMENTE un objeto JSON valido:
+{
+  "aprobado": true o false,
+  "comentario": "Critica teatral breve de maximo 35 palabras."
+}`;
+}
