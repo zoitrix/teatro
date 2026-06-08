@@ -36,15 +36,48 @@ function extraerEvaluacionDirector(textoCrudo: string): Partial<EvaluacionDirect
   }
 }
 
+function limpiarTituloGenerado(textoCrudo: string): string {
+  const primeraLinea = textoCrudo
+    .split(/\r?\n/)
+    .map((linea) => linea.trim())
+    .find(Boolean) || '';
+
+  const sinPrefijo = primeraLinea.replace(
+    /^(?:aqui tienes(?: una frase| un titulo)?|frase final|frase|titulo|propuesta|respuesta)\s*:\s*/i,
+    '',
+  );
+
+  return sinPrefijo
+    .replace(/\s*[\(\[\{][^\)\]\}]*[\)\]\}]\s*/g, ' ')
+    .replace(/["'`“”‘’«»]/g, '')
+    .replace(/[.。]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getTemperaturaTitulo(dificultad: DificultadImpro): number {
+  if (dificultad === 'facil') {
+    return 0.6;
+  }
+
+  if (dificultad === 'media') {
+    return 0.8;
+  }
+
+  return 0.95;
+}
+
 export async function generarTituloImpro(dificultad: DificultadImpro, titulos: string[]): Promise<string> {
   const groq = crearClienteGroq();
   const response = await groq.chat.completions.create({
     model: 'llama-3.1-8b-instant',
     messages: [{ role: 'user', content: crearPromptTitulo(dificultad, titulos) }],
-    max_tokens: 80,
+    temperature: getTemperaturaTitulo(dificultad),
+    max_tokens: 40,
   });
 
-  return response.choices[0]?.message?.content?.trim() || 'Titulo Misterioso';
+  const titulo = limpiarTituloGenerado(response.choices[0]?.message?.content?.trim() || '');
+  return titulo || 'Titulo Misterioso';
 }
 
 export async function transcribirAudioImpro(audioBlob: Blob | null): Promise<string> {

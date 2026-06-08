@@ -1,5 +1,34 @@
 import type { DificultadImpro, FaseActo, ObraHistorial } from './types';
 
+function crearGuiaDificultadTitulo(dificultad: DificultadImpro): string {
+  if (dificultad === 'facil') {
+    return `FACIL: locura cotidiana y jugable.
+- Debe partir de una situacion reconocible: casa, familia, trabajo, compra, vecinos, colegio, medico, restaurante.
+- La rareza debe ser pequena y facil de actuar: una orden absurda, un malentendido claro, un objeto fuera de lugar.
+- Evita amenazas cosmicas, conspiraciones, leyes imposibles o tecnologia rara.
+- Salida invalida: El universo exige explicaciones.
+- Salida valida: Tu madre escondio mi maleta.`;
+  }
+
+  if (dificultad === 'media') {
+    return `MEDIA: caos social con secreto incomodo.
+- Debe incluir una revelacion, sospecha, acusacion o regla absurda que complique una situacion normal.
+- La escena debe sonar a chisme de publico, no a fantasia abstracta.
+- Puede haber exageracion, pero el conflicto debe entenderse al instante.
+- Salida invalida: Me despiertan a medianoche.
+- Salida valida: El cura subasta mi cumpleanos.`;
+  }
+
+  return `DIFICIL: absurdo extremo pero concreto.
+- Debe mezclar un lugar, objeto o tramite cotidiano con una consecuencia imposible.
+- La locura debe ser clara y actuable: burocracia absurda, autoridad ridicula, objeto con poder social, norma imposible, secreto desproporcionado.
+- Prohibido quedarse en misterio generico: medianoche, alarma, sombra, secreto, destino o sueno no bastan por si solos.
+- Prohibido inventar palabras, nombres falsos o terminos que no existan en espanol.
+- Salida invalida: Me despiertan a medianoche.
+- Salida invalida: Me despierta el leder de la alarma.
+- Salida valida: Hacienda reclama mi amigo imaginario.`;
+}
+
 export function crearPromptTitulo(dificultad: DificultadImpro, titulos: string[]): string {
   const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavia';
 
@@ -12,6 +41,8 @@ export function crearPromptTitulo(dificultad: DificultadImpro, titulos: string[]
 
     [REGLA CRITICA DE ORTOGRAFIA Y GRAMATICA]
     - Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugacion. Asegurate de que todos los verbos irregulares esten perfectamente conjugados en espanol real y correcto.
+    - Usa solo palabras comunes del espanol. Nada de spanglish, nombres inventados, marcas falsas ni terminos deformados.
+    - La frase debe entenderse en una lectura rapida y tener sujeto, accion y situacion concreta.
 
     [REGLAS DE ORO PARA EL TONO]
     1. PROHIBIDO EL TONO POETICO O METAFORICO: Evita frases filosoficas abstractas. Nadie grita poesia en un show de impro.
@@ -26,15 +57,25 @@ export function crearPromptTitulo(dificultad: DificultadImpro, titulos: string[]
     Nada de dramas oscuros, tragedias ni infidelidades serias. Buscamos comedia de enredos, situaciones ridiculas y juego limpio.
 
     [MECANISMO DE INSPIRACION POR NIVEL: ${dificultad.toUpperCase()}]
-    - FACIL: Enredos cotidianos y ordenes directas.
-    - MEDIO: Chismes, sospechas y situaciones incomodas.
-    - DIFICIL: Secretos absurdos, conspiraciones cotidianas y exageraciones.
+    ${crearGuiaDificultadTitulo(dificultad)}
 
     [CONTROL DE CALIDAD FINAL]
     Revisa que las palabras existan, esten bien escritas y suenen naturales. Debe tener entre 4 y 7 palabras.
+    Antes de responder, descarta mentalmente cualquier frase que:
+    - Parezca un titulo generico de pelicula.
+    - Sea solo una situacion normal sin giro comico.
+    - Contenga una palabra dudosa o inventada.
+    - Use Mayusculas En Cada Palabra.
 
     [FORMATO DE SALIDA CRITICO]
-    Devuelve UNICAMENTE las palabras de la frase, sin comillas, puntos finales ni explicaciones.
+    Devuelve UNICAMENTE las palabras de la frase final.
+    - Usa mayuscula solo al inicio de la frase o en nombres propios reales.
+    - Prohibido usar comillas de cualquier tipo.
+    - Prohibido usar parentesis, corchetes, asteriscos o notas escenicas.
+    - Prohibido escribir introducciones como "Aqui tienes", "Titulo:", "Frase:" o similares.
+    - Prohibido explicar tu decision, describir tu pensamiento o anadir comentarios metalinguisticos.
+    - Salida invalida: "Mi vecino es astronauta" (suena absurdo y cotidiano)
+    - Salida valida: Mi vecino es astronauta
 
     Frase final:
   `;
