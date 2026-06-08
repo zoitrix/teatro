@@ -6,15 +6,34 @@ import type { DificultadImpro, EvaluacionDirector, FaseActo, ObraHistorial } fro
 function crearClienteGroq(): OpenAI {
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
 
-  if (!apiKey) {
+  if (!apiKey || apiKey.trim() === '') {
     throw new Error('La API Key de Groq no esta configurada.');
   }
 
   return new OpenAI({
-    apiKey,
+    apiKey: apiKey.trim(),
     baseURL: 'https://api.groq.com/openai/v1',
     dangerouslyAllowBrowser: true,
   });
+}
+
+function extraerEvaluacionDirector(textoCrudo: string): Partial<EvaluacionDirector> {
+  try {
+    return JSON.parse(textoCrudo);
+  } catch {
+    const inicioJson = textoCrudo.indexOf('{');
+    const finJson = textoCrudo.lastIndexOf('}');
+
+    if (inicioJson === -1 || finJson === -1 || finJson <= inicioJson) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(textoCrudo.substring(inicioJson, finJson + 1));
+    } catch {
+      return {};
+    }
+  }
 }
 
 export async function generarTituloImpro(dificultad: DificultadImpro, titulos: string[]): Promise<string> {
@@ -66,17 +85,14 @@ export async function evaluarActoConDirector(params: {
     messages: [{ role: 'user', content: crearPromptDirector(params) }],
     temperature: 0.2,
     max_tokens: 150,
+    response_format: { type: 'json_object' },
   });
 
   const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
-  const inicioJson = textoCrudo.indexOf('{');
-  const finJson = textoCrudo.lastIndexOf('}');
-  const jsonLimpio = textoCrudo.substring(inicioJson, finJson + 1);
-  const objetoJSON = JSON.parse(jsonLimpio);
+  const objetoJSON = extraerEvaluacionDirector(textoCrudo);
 
   return {
     aprobado: !!objetoJSON.aprobado,
     comentario: objetoJSON.comentario || 'Falta contundencia en la propuesta.',
   };
 }
-
