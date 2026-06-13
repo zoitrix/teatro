@@ -17,6 +17,20 @@ export const ALUCINACIONES_WHISPER = [
 ];
 
 export const ESTRATEGIAS_INICIO: EstrategiaInicio[] = [
+{
+    id: 'estilo-libre',
+    tecnica: 'Estilo Libre',
+    enfoque: 'Abierto / Creativo',
+    mecanica: 'Reacciona al título de forma orgánica e intuitiva, utilizando cualquier recurso (físico, verbal, relacional o espacial) sin restricciones de método.',
+    pensamiento: 'Pensamiento asociativo y espontáneo: juego libre sin filtros técnicos.',
+    idealPara: 'Cualquier formato, calentamientos, alumnos principiantes o exploración sin presión estructural.',
+    criterioExito: 'Construcción de plataforma clara y jugable.',
+    ejemplo: 'Título: "El último tren a París". El alumno reacciona libremente sentándose en el suelo mientras imita el traqueteo de un vagón y mira por una ventana imaginaria, o bien arranca directamente de pie diciendo: "¡Señor, espere! ¡Sé que las puertas ya están cerradas, pero mi vida entera va en ese vagón!".',
+    indicadoresLogro:
+      'Establece en los primeros segundos una base sólida para la escena (quién es, dónde está y qué le pasa) y acepta el estímulo del título de forma honesta y utilizable para el compañero.',
+    lucesRojas:
+      'Se queda bloqueado por exceso de libertad (parálisis), ignora por completo el título propuesto, o genera una propuesta caótica que no construye ninguna situación dramática.',
+  },
   {
     id: 'asociaciones-satelite',
     tecnica: 'Asociaciones Satelite',
