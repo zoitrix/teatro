@@ -10,6 +10,7 @@ export interface EstrategiaInicio {
   pensamiento: string;
   idealPara: string;
   criterioExito: string;
+  ejemplo: string;
   indicadoresLogro: string;
   lucesRojas: string;
 }

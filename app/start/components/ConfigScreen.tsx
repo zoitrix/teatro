@@ -56,10 +56,8 @@ export function ConfigScreen({
           <p style={{ marginTop: 0 }}>
             <strong>{estrategia.tecnica}</strong> ({estrategia.enfoque})
           </p>
-          <p>{estrategia.mecanica}</p>
-          <p style={{ marginBottom: 0 }}>
-            <strong>Busca:</strong> {estrategia.criterioExito}
-          </p>
+          <p><strong>Mecánica:</strong> {estrategia.mecanica}</p>
+          <p style={{ marginBottom: 0 }}><strong>Ejemplo:</strong> {estrategia.ejemplo}</p>
         </div>
 
         <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
