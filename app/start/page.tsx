@@ -12,7 +12,7 @@ export default function StartPage() {
   return (
     <div className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
-        <h1>Inicios</h1>
+        <h1>🎭 Inicios 🎬</h1>
         <p className={styles.subtitulo}>
           {controller.pantalla === 'config'
             ? 'Elige una estrategia y prepara el primer impulso'
