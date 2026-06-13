@@ -39,6 +39,26 @@ function extraerEvaluacionDirector(textoCrudo: string): Partial<EvaluacionDirect
   }
 }
 
+function comentarioIndicaTecnicaInsuficiente(comentario: string): boolean {
+  const normalizado = comentario
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return [
+    'tecnica limitada',
+    'aplicacion limitada',
+    'podria haber explorado mas',
+    'podria explorar mas',
+    'demasiado literal',
+    'muy literal',
+    'no se aprecia la tecnica',
+    'falta la tecnica',
+    'sin aplicar la tecnica',
+    'tecnica insuficiente',
+  ].some((patron) => normalizado.includes(patron));
+}
+
 export async function generarTituloInicio(dificultad: DificultadStart, titulos: string[]): Promise<string> {
   return generarTituloStructure(dificultad, titulos);
 }
@@ -63,9 +83,11 @@ export async function evaluarInicioConDirector(params: {
 
   const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
   const objetoJSON = extraerEvaluacionDirector(textoCrudo);
+  const comentario = objetoJSON.comentario || 'Falta una entrada escenica mas concreta y alineada con la tecnica.';
+  const tecnicaInsuficiente = comentarioIndicaTecnicaInsuficiente(comentario);
 
   return {
-    aprobado: !!objetoJSON.aprobado,
-    comentario: objetoJSON.comentario || 'Falta una entrada escenica mas concreta y alineada con la tecnica.',
+    aprobado: !!objetoJSON.aprobado && !tecnicaInsuficiente,
+    comentario,
   };
 }

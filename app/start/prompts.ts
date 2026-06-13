@@ -17,8 +17,11 @@ function crearPruebaTecnicaEstrategia(estrategia: EstrategiaInicio): string {
 - Para aprobar, el actor debe arrancar desde un elemento periferico del titulo, no desde su significado literal ni desde una simple reformulacion.
 - Debe apreciarse una asociacion indirecta: lugar, sensacion, consecuencia lateral, objeto secundario, sospecha desplazada, ambiente o detalle que orbita alrededor del titulo sin repetir su centro.
 - Repetir el hecho central del titulo con sinonimos NO cuenta como tecnica: robo/robaron, billetera/cartera, ayer/noche anterior, perder/perdido o acusar al ladron directo son caminos literales.
+- Reutilizar el sujeto principal, la accion principal o la imagen central del titulo de forma directa NO cuenta como satelite aunque anada policia, ventana, localizador u otro detalle.
+- Si el comentario honesto seria "la tecnica es limitada", "podria explorar mas la periferia" o "es demasiado literal", entonces "aprobado" DEBE ser false.
 - Si el inicio se limita a explicar el titulo con mas contexto, "aprobado" DEBE ser false aunque tenga personajes, relacion, emocion y conflicto.
 - Ejemplo insuficiente: "Discuto con el portero porque anoche me robaron la cartera y tengo un localizador".
+- Ejemplo insuficiente: "Veo al vecino haciendo exactamente lo que dice el titulo y llamo a la policia".
 - Ejemplo suficiente: "Entro a la discoteca contando las monedas exactas para pagar un vaso de agua, reviso compulsivamente cada bolsillo y acuso al guardarropa de oler a cuero nuevo".`;
 
     case 'disparador-primera-linea':
@@ -175,6 +178,7 @@ ${crearPruebaTecnicaEstrategia(params.estrategia)}
 - Si no hay conflicto, tension, deseo incompatible o problema activo, "aprobado" DEBE ser false.
 - Si no se aprecia la tecnica elegida, "aprobado" DEBE ser false aunque haya una idea escenica.
 - Si la propuesta cumple la introduccion escenica pero falla la prueba tecnica especifica, "aprobado" DEBE ser false.
+- Si la tecnica aparece de forma limitada, superficial, accidental, demasiado literal o mejorable, "aprobado" DEBE ser false. No escribas "aprobado": true junto a una critica de tecnica insuficiente.
 - Si es una idea inconexa, demasiado vaga o sin detalles accionables para empezar a improvisar, "aprobado" DEBE ser false.
 - No exijas perfeccion literaria: si la propuesta es simple pero jugable, conectada al titulo, contiene los cuatro elementos de introduccion y usa la tecnica, puede aprobar.
 
