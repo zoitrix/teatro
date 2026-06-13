@@ -1,4 +1,5 @@
 import type { EstrategiaInicio } from './types';
+import { crearCriteriosIntroduccionEscenica } from '../shared/introEvaluation';
 
 export function crearPromptDirectorInicio(params: {
   titulo: string;
@@ -28,21 +29,24 @@ Criterio de exito: ${params.estrategia.criterioExito}
 Indicadores de logro: ${params.estrategia.indicadoresLogro}
 Luces rojas / errores comunes: ${params.estrategia.lucesRojas}
 
-[CRITERIOS GENERALES DE UN BUEN INICIO]
-Para aprobar, el texto debe describir como arrancaria la improvisacion con suficiente informacion escenica.
-Debe aportar, de forma reconocible:
-- Una situacion inicial o accion concreta.
-- Al menos un personaje o rol escenico.
-- Una relacion, tension, deseo, atmosfera o problema jugable.
-- Una conexion clara con el titulo.
-- Una aplicacion visible de la tecnica elegida.
+[CRITERIOS OBLIGATORIOS DE INTRODUCCION ESCENICA]
+${crearCriteriosIntroduccionEscenica(params.titulo)}
+
+[CRITERIO OBLIGATORIO DE TECNICA DE INICIO]
+- Ademas de construir una introduccion escenica completa, el actor debe aplicar de forma visible la tecnica elegida.
+- La tecnica no sustituye a la introduccion escenica: una idea ingeniosa pero sin personajes, relacion, emocion y conflicto debe suspender.
+- La introduccion escenica no sustituye a la tecnica: una escena completa pero sin la estrategia elegida debe suspender.
 
 [REGLAS DE RECHAZO]
 - Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false.
 - Si solo repite o parafrasea el titulo, "aprobado" DEBE ser false.
+- Si no hay personajes o roles escenicos identificables, "aprobado" DEBE ser false.
+- Si no hay relacion clara entre personajes o roles, "aprobado" DEBE ser false.
+- Si no hay emocion, actitud o estado interno jugable, "aprobado" DEBE ser false.
+- Si no hay conflicto, tension, deseo incompatible o problema activo, "aprobado" DEBE ser false.
 - Si no se aprecia la tecnica elegida, "aprobado" DEBE ser false aunque haya una idea escenica.
 - Si es una idea inconexa, demasiado vaga o sin detalles accionables para empezar a improvisar, "aprobado" DEBE ser false.
-- No exijas perfeccion literaria: si la propuesta es simple pero jugable, conectada al titulo y usa la tecnica, puede aprobar.
+- No exijas perfeccion literaria: si la propuesta es simple pero jugable, conectada al titulo, contiene los cuatro elementos de introduccion y usa la tecnica, puede aprobar.
 
 [TEXTO DEL ACTOR]
 <texto_del_actor>${params.propuestaFinal}</texto_del_actor>
