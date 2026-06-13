@@ -1,4 +1,4 @@
-import styles from '../../impro-base/base.module.css';
+import styles from '../base.module.css';
 import type { FaseActo, ObraHistorial, TiemposConfig } from '../types';
 
 interface PlayingScreenProps {
@@ -103,4 +103,3 @@ function PhaseChallenge({ faseActual, obra, tiemposConfig }: PhaseChallengeProps
     </div>
   );
 }
-

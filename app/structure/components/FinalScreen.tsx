@@ -1,4 +1,4 @@
-import styles from '../../impro-base/base.module.css';
+import styles from '../base.module.css';
 import type { ObraHistorial } from '../types';
 
 interface FinalScreenProps {
@@ -54,4 +54,3 @@ function ActoFinal({ color, texto, titulo }: ActoFinalProps) {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 'use client';
 
-import styles from '../impro-chat/chat.module.css';
+import styles from '../structure/base.module.css';
 import { ConfigScreen } from './components/ConfigScreen';
 import { FinalScreen } from './components/FinalScreen';
 import { PlayingScreen } from './components/PlayingScreen';
@@ -65,4 +65,3 @@ export default function ImproChatModularPage() {
     </div>
   );
 }
-

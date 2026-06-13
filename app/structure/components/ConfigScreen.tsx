@@ -1,4 +1,5 @@
-import styles from '../../impro-base/base.module.css';
+import Link from 'next/link';
+import styles from '../base.module.css';
 import type { DificultadImpro, FaseActo, TiemposConfig } from '../types';
 
 interface ConfigScreenProps {
@@ -85,6 +86,10 @@ export function ConfigScreen({
       >
         {loading ? 'Afinando el libreto...' : '¡Subir el Telón! 🚀'}
       </button>
+
+      <Link className={styles.volverMenuLink} href="/">
+        Volver al menu principal
+      </Link>
     </div>
   );
 }
@@ -111,4 +116,3 @@ function TiempoInput({ fase, label, onTiempoChange, value }: TiempoInputProps) {
     </label>
   );
 }
-

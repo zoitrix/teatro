@@ -1,4 +1,4 @@
-import styles from '../../impro-chat/chat.module.css';
+import styles from '../../structure/base.module.css';
 import type { FaseActo, FeedbackFijo, MensajeChat, TiemposConfig } from '../types';
 
 interface PlayingScreenProps {
@@ -153,4 +153,3 @@ function RecentDialogue({ historialLetra }: { historialLetra: MensajeChat[] }) {
     </div>
   );
 }
-

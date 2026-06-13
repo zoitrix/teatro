@@ -1,4 +1,5 @@
-import styles from '../../impro-chat/chat.module.css';
+import Link from 'next/link';
+import styles from '../../structure/base.module.css';
 import type { DificultadChat, FaseActo, TiemposConfig } from '../types';
 
 interface ConfigScreenProps {
@@ -51,6 +52,10 @@ export function ConfigScreen({
       <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} style={{ marginTop: '25px' }} onClick={onIniciar} disabled={loading}>
         {loading ? 'Inicializando Libreto...' : '¡Subir el Telón! 🚀'}
       </button>
+
+      <Link className={styles.volverMenuLink} href="/">
+        Volver al menu principal
+      </Link>
     </div>
   );
 }
@@ -75,4 +80,3 @@ function TiempoInput({ fase, label, onTiempoChange, value }: TiempoInputProps) {
     </label>
   );
 }
-

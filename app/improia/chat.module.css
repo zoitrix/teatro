@@ -142,6 +142,19 @@
   background: linear-gradient(180deg, #5b6777 0%, #2f3a46 100%);
 }
 
+.volverMenuLink {
+  align-self: center;
+  color: var(--color-telon);
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+
+.volverMenuLink:hover,
+.volverMenuLink:focus-visible {
+  text-decoration: underline;
+}
+
 .cronometro {
   align-self: center;
   min-width: 140px;

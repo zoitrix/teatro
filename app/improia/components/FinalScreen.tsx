@@ -1,4 +1,4 @@
-import styles from '../../impro-chat/chat.module.css';
+import styles from '../../structure/base.module.css';
 import { ACTOS_FINALES } from '../constants';
 import type { FaseActo, InformeDirector, MensajeChat } from '../types';
 
@@ -102,4 +102,3 @@ function CuadernoDirector({ informeFinal }: { informeFinal: InformeDirector }) {
     </>
   );
 }
-

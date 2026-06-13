@@ -1,4 +1,4 @@
-import styles from '../../impro-base/base.module.css';
+import styles from '../base.module.css';
 import type { FaseActo } from '../types';
 
 interface FeedbackScreenProps {
@@ -76,4 +76,3 @@ export function FeedbackScreen({
     </div>
   );
 }
-
