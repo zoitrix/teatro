@@ -4,7 +4,7 @@ import type { Metadata } from 'next'; // 💡 Importamos el tipo oficial de Next
 
 // 💡 Tipamos la constante de metadata
 export const metadata: Metadata = {
-  title: '🎭 ¡Impro Match! 🎬',
+  title: '🎭 ¡Impro Trainer! 🎬',
   description: 'Saca al actor amateur que llevas dentro entrenando tu voz.',
 };
 
