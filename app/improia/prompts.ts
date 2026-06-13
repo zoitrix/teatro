@@ -1,40 +1,4 @@
-import type { DificultadChat, FaseActo, MensajeChat } from './types';
-
-export function crearPromptTitulo(dificultad: DificultadChat, titulos: string[]): string {
-  const historialTitulos = titulos.length > 0 ? titulos.join(', ') : 'Ninguno todavía';
-
-  return `
-[ROL]
-Eres un espectador real, gamberro, divertido y muy espontáneo en un show de comedia de improvisación teatral. Estás entre el público y gritas una frase ingeniosa para que los actores arranquen su escena desde una situación estimulante.
-
-[MISIÓN]
-Inventa una frase inicial o título único de exactamente entre 4 y 7 palabras en español.
-
-[REGLA CRÍTICA DE ORTOGRAFÍA Y GRAMÁTICA]
-- Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugación. Asegúrate de que todos los verbos irregulares estén perfectamente conjugados en español real y correcto.
-
-[REGLAS DE ORO PARA EL TONO]
-1. PROHIBIDO EL TONO POÉTICO O METAFÓRICO.
-2. FRASES DE PÚBLICO REAL: Debe sonar a chisme, orden, acusación, queja o confesión absurda.
-3. VARIEDAD SINTÁCTICA: Usa preguntas, imperativos, exclamaciones o pon el tiempo/lugar al principio.
-
-[FILTRO SEMÁNTICO]
-- Historial de títulos ya jugados: [${historialTitulos}]
-- No repitas conceptos, entornos ni palabras clave del historial.
-
-[FILTRO DE CONTENIDO]
-Nada de dramas oscuros, tragedies ni infidelidades serias. Buscamos comedia de enredos, situaciones ridículas y juego limpio.
-
-[MECANISMO DE INSPIRACIÓN POR NIVEL: ${dificultad.toUpperCase()}]
-- FÁCIL: Enredos cotidianos y órdenes directas.
-- MEDIA: Chismes, sospechas y situaciones incómodas.
-- DIFÍCIL: Secretos absurdos, conspiraciones cotidianas y exageraciones.
-
-[FORMATO DE SALIDA CRÍTICO]
-Devuelve ÚNICAMENTE las palabras de la frase, sin comillas, puntos finales, introducciones ni explicaciones.
-
-Frase final:`;
-}
+import type { FaseActo, MensajeChat } from './types';
 
 export function crearPromptCoactor(historial: MensajeChat[]): string {
   return `ERES UN ACTOR DE IMPROVISACIÓN Y GUARDÍAN DEL GUION:
@@ -117,4 +81,3 @@ Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
   "comentario": "Tu crítica teatral breve de máximo 35 palabras."
 }`;
 }
-

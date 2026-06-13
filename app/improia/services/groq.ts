@@ -1,7 +1,8 @@
 import { OpenAI } from 'openai';
 import { PATRONES_WHISPER_FANTASMA } from '../constants';
-import { crearPromptCoactor, crearPromptDirector, crearPromptTitulo } from '../prompts';
+import { crearPromptCoactor, crearPromptDirector } from '../prompts';
 import type { DificultadChat, EvaluacionActo, FaseActo, MensajeChat } from '../types';
+import { generarTituloComun } from '../../shared/titleGeneration';
 
 function crearClienteGroq(): OpenAI {
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -28,14 +29,7 @@ function esAlucinacionAudio(texto: string): boolean {
 }
 
 export async function generarTituloChat(dificultad: DificultadChat, titulos: string[]): Promise<string> {
-  const groq = crearClienteGroq();
-  const response = await groq.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
-    messages: [{ role: 'user', content: crearPromptTitulo(dificultad, titulos) }],
-    max_tokens: 40,
-  });
-
-  return response.choices[0]?.message?.content?.trim() || '¡El misterio del calcetín perdido!';
+  return generarTituloComun(dificultad, titulos);
 }
 
 export async function transcribirTurno(audioBlob: Blob | null): Promise<string> {
@@ -109,4 +103,3 @@ export async function evaluarActoDirector(params: {
     transcripcionAcumulada: propuestaFinal === '[SIN_RESPUESTA]' ? 'Sin intervención de voz.' : propuestaFinal,
   };
 }
-
