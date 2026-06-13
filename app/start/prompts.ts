@@ -22,6 +22,7 @@ function crearPruebaTecnicaEstrategia(estrategia: EstrategiaInicio): string {
 - Si el inicio se limita a explicar el titulo con mas contexto, "aprobado" DEBE ser false aunque tenga personajes, relacion, emocion y conflicto.
 - Ejemplo insuficiente: "Discuto con el portero porque anoche me robaron la cartera y tengo un localizador".
 - Ejemplo insuficiente: "Veo al vecino haciendo exactamente lo que dice el titulo y llamo a la policia".
+- Ejemplo insuficiente: "Me quedo en casa de mi tio y descubro que tiene gatos en la cocina para cocinarlos".
 - Ejemplo suficiente: "Entro a la discoteca contando las monedas exactas para pagar un vaso de agua, reviso compulsivamente cada bolsillo y acuso al guardarropa de oler a cuero nuevo".`;
 
     case 'disparador-primera-linea':
