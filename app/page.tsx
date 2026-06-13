@@ -3,9 +3,9 @@ import styles from './home.module.css';
 
 const menuItems = [
   {
-    title: 'Practicar estructuras',
+    title: 'Estructuras',
     description:
-      'Entrena la construccion de una escena por actos: inicio, giros y desenlace, con feedback del director.',
+      'Entrena la construccion de una historia por actos: inicio, giros y desenlace.',
     href: '/structure',
     action: 'Entrena estructuras',
   },
@@ -17,7 +17,7 @@ const menuItems = [
     action: 'Practica inicios',
   },
   {
-    title: 'Improvisar con la IA',
+    title: 'ImprovIA',
     description:
       'Comparte escena con un co-actor virtual y practica reaccion, escucha y continuidad dramatica en voz alta.',
     href: '/improia',
