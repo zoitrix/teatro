@@ -24,7 +24,7 @@ export default function ImproChatModularPage() {
     <div className={styles.teatroPageWrapper}>
       <div className={styles.teatroContainer}>
         <header className={styles.teatroHeader}>
-          <h1>🎭 ¡Batalla! 🎬</h1>
+          <h1>🎭 ImprovIA 🎬</h1>
           <p className={styles.subtitulo}>
             {controller.pantalla === 'config'
               ? 'Ajusta los tiempos del libreto por actos'

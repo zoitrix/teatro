@@ -17,7 +17,7 @@ export default function ImproBaseModularPage() {
   return (
     <div className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
-        <h1>🎭 ¡Impro 60's! 🎬</h1>
+        <h1>🎭 Estructuras 🎬</h1>
         <p className={styles.subtitulo}>
           {controller.pantalla === 'config'
             ? '¡Saca un título y construye tu historia!'
