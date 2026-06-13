@@ -142,7 +142,7 @@ ${consignasEspecificas}
 <texto_del_actor>${params.propuestaFinal}</texto_del_actor>
 
 [REGLA INQUEBRANTABLE DE MUTISMO]
-- Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false.
+- Si <texto_del_actor> es exactamente "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false y nunca mencionar en el comentario la palabra "[SIN_RESPUESTA]".
 - Si hay cualquier otra propuesta escrita, evaluala bajo los criterios normales detallados arriba.
 
 [FORMATO DE SALIDA ESTRICTO]
