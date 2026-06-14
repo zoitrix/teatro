@@ -28,6 +28,30 @@ function esAlucinacionAudio(texto: string): boolean {
   return PATRONES_WHISPER_FANTASMA.some((patron) => patron.test(normalizado));
 }
 
+function ultimoTurnoUsuario(historial: MensajeChat[]): string {
+  return [...historial].reverse().find((mensaje) => mensaje.role === 'user')?.content.trim() || '';
+}
+
+function desenlacePareceAbierto(historial: MensajeChat[]): boolean {
+  const ultimoTurno = ultimoTurnoUsuario(historial);
+
+  if (!ultimoTurno) {
+    return true;
+  }
+
+  const normalizado = ultimoTurno
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return (
+    /[?¿]\s*$/.test(ultimoTurno) ||
+    /\b(y si|que pasa si|deberiamos|podriamos|vamos a|voy a|iba a|plan|alarma|nos siguen|nos atrapan|salimos corriendo)\b/.test(
+      normalizado,
+    )
+  );
+}
+
 export async function generarTituloChat(dificultad: DificultadChat, titulos: string[]): Promise<string> {
   return generarTituloComun(dificultad, titulos);
 }
@@ -66,7 +90,7 @@ export async function generarReplicaCoactor(historial: MensajeChat[]): Promise<s
     max_tokens: 60,
   });
 
-  return response.choices[0]?.message?.content?.trim() || '¡Continúa, te escucho!';
+  return response.choices[0]?.message?.content?.trim() || 'Continua, te escucho.';
 }
 
 export async function evaluarActoDirector(params: {
@@ -97,9 +121,13 @@ export async function evaluarActoDirector(params: {
     resultado = JSON.parse(jsonLimpio);
   }
 
+  const desenlaceAbierto = params.fase === 'desenlace' && desenlacePareceAbierto(params.historial);
+
   return {
-    aprobado: !!resultado.aprobado,
-    comentario: resultado.comentario || 'Cumple con el ritmo del libreto.',
-    transcripcionAcumulada: propuestaFinal === '[SIN_RESPUESTA]' ? 'Sin intervención de voz.' : propuestaFinal,
+    aprobado: !!resultado.aprobado && !desenlaceAbierto,
+    comentario: desenlaceAbierto
+      ? 'El nudo tiene energia, pero el ultimo turno deja la accion pendiente o en pregunta. Falta una decision o remate que cierre la obra.'
+      : resultado.comentario || 'Cumple con el ritmo del libreto.',
+    transcripcionAcumulada: propuestaFinal === '[SIN_RESPUESTA]' ? 'Sin intervencion de voz.' : propuestaFinal,
   };
 }

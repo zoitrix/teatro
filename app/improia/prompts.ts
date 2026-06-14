@@ -27,6 +27,8 @@ export function crearConsignasDirector(fase: FaseActo, titulo: string): string {
 - Evalua si en la obra completa el actor ayudo a establecer una plataforma inicial clara.
 - Debe haber titulo integrado, personajes o roles, relacion, lugar o situacion reconocible y primer conflicto jugable.
 - No exijas que todo aparezca en la primera frase, pero si debe quedar claro durante el arranque de la conversacion.
+- No suspendas por falta de exposicion escolar si el actor conecta tematicamente con el titulo mediante una norma, prohibicion, politica, queja o conflicto social claro.
+- Si el titulo sugiere una regla absurda y el actor la convierte en queja activa o debate entre personajes, considera que el titulo esta integrado.
 - Si el usuario evade el titulo "${titulo}" por completo, dice sinsentidos inconexos o no aporta plataforma, debes poner "aprobado": false.`;
   }
 
@@ -41,6 +43,10 @@ export function crearConsignasDirector(fase: FaseActo, titulo: string): string {
   return `OBJETIVO DE LA EVALUACION DEL DESENLACE:
 - Evalua si la obra completa termina con una resolucion, remate, decision final o cierre reconocible.
 - El actor debe participar en el cierre, no solo dejar que la IA lo resuelva.
+- Presta especial atencion a las ultimas 2 intervenciones del ACTOR (Usuario).
+- No apruebes por la energia del nudo si el final real no cierra nada.
+- Si la ultima intervencion del actor deja una pregunta abierta, una amenaza activa, una persecucion sin resolver, una accion futura pendiente o solo propone un plan, "aprobado" DEBE ser false.
+- Para aprobar debe haber consecuencia visible o decision cerrada: victoria, fracaso, rendicion, acuerdo, castigo, fuga completada, revelacion final o remate definitivo.
 - Si el texto carece de sustancia resolutiva o corta la escena abruptamente sin cerrar nada, "aprobado" DEBE ser false.`;
 }
 
@@ -73,6 +79,11 @@ ${libretoCompleto || 'El actor no ha intervenido.'}
 
 [REGLA INQUEBRANTABLE DE MUTISMO]
 - Si el ACTOR (Usuario) no tiene ninguna linea registrada en el libreto o solo el texto "[SIN_RESPUESTA]", el campo "aprobado" DEBE ser false.
+
+[REGLA DE INDEPENDENCIA DE CRITERIOS]
+- Evalua solo el criterio solicitado ahora. Un nudo divertido no puede hacer aprobar el desenlace si no hay cierre real.
+- Una introduccion imperfecta puede aprobar si establece una plataforma jugable conectada al titulo.
+- Un desenlace solo puede aprobar si hay cierre, no solo escalada.
 
 [FORMATO DE SALIDA ESTRICTO]
 Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura exacta:
