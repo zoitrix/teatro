@@ -25,13 +25,13 @@ ${params.tipoFinal.tecnica}: ${params.tipoFinal.enfoque}
 - No inventes conflictos de contratos, deudas, herencias o alquileres salvo que el titulo los sugiera directamente.
 
 [REGLAS DEL PLANTEAMIENTO]
-- Maximo 30 palabras.
+- Idealmente 18 a 30 palabras; puedes llegar a 38 si hace falta para cerrar la frase con sentido.
 - Una sola frase.
 - Debe incluir personajes o roles, relacion, lugar y conflicto activo de forma compacta.
 - Debe inspirarse en el titulo "${params.titulo}" sin explicarlo todo.
 
 [REGLAS DEL NUDO]
-- Maximo 30 palabras.
+- Idealmente 18 a 30 palabras; puedes llegar a 38 si hace falta para cerrar la frase con sentido.
 - Una sola frase.
 - El nudo debe continuar el planteamiento con coherencia.
 - Debe aumentar el conflicto sin resolverlo.
@@ -40,15 +40,16 @@ ${params.tipoFinal.tecnica}: ${params.tipoFinal.enfoque}
 - Evita narracion poetica, oscuridad tragica y abstraccion. Debe ser escenico, concreto y jugable.
 
 [REGLA DE BREVEDAD INQUEBRANTABLE]
-- "planteamiento" y "nudo" deben tener entre 18 y 30 palabras cada uno.
+- "planteamiento" y "nudo" deben tener entre 18 y 38 palabras cada uno.
 - No uses 2 o 3 frases. No hagas sinopsis larga. No incluyas antecedentes.
+- Nunca termines una frase a medias ni con palabras colgantes como "de", "por", "para", "con", "su" o "sus".
 - Prefiere nombres comunes y acciones claras: "dos hermanas", "en una farmacia", "el contrato desaparece".
 
 [FORMATO DE SALIDA ESTRICTO]
 Devuelve EXCLUSIVAMENTE un objeto JSON valido:
 {
-  "planteamiento": "Una frase de 18 a 30 palabras con la plataforma escenica.",
-  "nudo": "Una frase de 18 a 30 palabras que complique el conflicto y deje el cierre pendiente."
+  "planteamiento": "Una frase completa de 18 a 38 palabras con la plataforma escenica.",
+  "nudo": "Una frase completa de 18 a 38 palabras que complique el conflicto y deje el cierre pendiente."
 }`;
 }
 

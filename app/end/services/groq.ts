@@ -37,7 +37,38 @@ function extraerObjetoJSON<T>(textoCrudo: string): Partial<T> {
   }
 }
 
-function limitarPalabras(texto: string, maxPalabras = 30): string {
+const PALABRAS_COLGANTES = new Set([
+  'a',
+  'al',
+  'ante',
+  'bajo',
+  'con',
+  'contra',
+  'de',
+  'del',
+  'desde',
+  'durante',
+  'el',
+  'en',
+  'entre',
+  'hacia',
+  'hasta',
+  'la',
+  'las',
+  'los',
+  'para',
+  'por',
+  'segun',
+  'sin',
+  'sobre',
+  'su',
+  'sus',
+  'tras',
+  'un',
+  'una',
+]);
+
+function limitarPalabras(texto: string, maxPalabras = 38): string {
   const limpio = texto.replace(/\s+/g, ' ').trim();
 
   if (!limpio) {
@@ -50,7 +81,35 @@ function limitarPalabras(texto: string, maxPalabras = 30): string {
     return limpio;
   }
 
-  return `${palabras.slice(0, maxPalabras).join(' ').replace(/[,:;]+$/g, '')}.`;
+  const fraseCompleta = limpio.match(/^(.{1,260}[.!?])\s+/);
+
+  if (fraseCompleta) {
+    return fraseCompleta[1].trim();
+  }
+
+  return palabras.slice(0, maxPalabras).join(' ').replace(/[\s,:;]+$/g, '');
+}
+
+function ultimaPalabraNormalizada(texto: string): string {
+  const palabras = texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[¿?¡!.,;:"'()[\]{}]/g, ' ')
+    .trim()
+    .split(/\s+/);
+
+  return palabras[palabras.length - 1] || '';
+}
+
+function frasePareceCompleta(texto: string): boolean {
+  const limpio = texto.trim();
+
+  if (!limpio) {
+    return false;
+  }
+
+  return !PALABRAS_COLGANTES.has(ultimaPalabraNormalizada(limpio));
 }
 
 const PALABRAS_VACIAS_TITULO = new Set([
@@ -165,7 +224,13 @@ export async function generarEscenaParaFinal(params: {
       nudo: limitarPalabras(objetoJSON.nudo || ''),
     };
 
-    if (contexto.planteamiento && contexto.nudo && contextoEstaAncladoAlTitulo(params.titulo, contexto)) {
+    if (
+      contexto.planteamiento &&
+      contexto.nudo &&
+      frasePareceCompleta(contexto.planteamiento) &&
+      frasePareceCompleta(contexto.nudo) &&
+      contextoEstaAncladoAlTitulo(params.titulo, contexto)
+    ) {
       return contexto;
     }
   }
