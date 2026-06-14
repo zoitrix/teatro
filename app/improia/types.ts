@@ -4,7 +4,7 @@ export type FaseActo = 'intro' | 'nudo' | 'desenlace';
 
 export type PantallaChat = 'config' | 'jugando' | 'final';
 
-export type DificultadChat = 'fácil' | 'media' | 'difícil';
+export type DificultadChat = 'facil' | 'media' | 'dificil';
 
 export interface MensajeChat {
   role: RoleChat;
@@ -34,4 +34,3 @@ export interface FeedbackFijo {
   texto: string;
   aprobado: boolean;
 }
-

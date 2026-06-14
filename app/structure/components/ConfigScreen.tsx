@@ -24,7 +24,7 @@ export function ConfigScreen({
   return (
     <div className={styles.bloqueConfig}>
       <div className={styles.recuadroExplicativo}>
-        <div className={styles.tituloMision}>💡Misión de la Obra💡</div>
+        <div className={styles.tituloMision}>💡Misión de "Estructuras"💡</div>
         {explicacionInicial}
       </div>
 

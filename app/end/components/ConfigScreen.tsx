@@ -32,7 +32,7 @@ export function ConfigScreen({
   return (
     <div className={styles.bloqueConfig}>
       <div className={styles.recuadroExplicativo}>
-        <div className={styles.tituloMision}>Mision de Finales</div>
+        <div className={styles.tituloMision}>💡Mision de "Finales"💡</div>
         Elige un tipo de final. La IA generara un titulo, un planteamiento y un nudo; tu trabajo sera cerrar la escena en voz alta aplicando la tecnica elegida.
       </div>
 

@@ -21,12 +21,14 @@ export function ConfigScreen({
 }: ConfigScreenProps) {
   return (
     <div className={styles.bloqueConfig}>
-      <div className={styles.recuadroReglas}>
-        <strong>📋 Reglas de la Academia:</strong> Cada acto se cerrará automáticamente al agotarse su tiempo. Habla
-        con fluidez con la IA. El director calificará cada bloque fijando su nota en el monitor de abajo y verás el
-        informe completo al terminar.
+      <div className={styles.recuadroExplicativo}>
+        <div className={styles.tituloMision}>💡Mision de ImprovIA💡</div>
+        Comparte escena con un co-actor virtual. La IA respondera como personaje dentro de la historia y tu objetivo
+        será escuchar, aceptar sus propuestas y construir una obra completa por actos.<br /><br />
+        Cada acto se cerrara automaticamente al agotarse su tiempo. Habla con fluidez con la IA y responde a lo que te
+        propone. El director calificara cada bloque y veras el informe completo al
+        terminar la funcion.
       </div>
-
       <br />
       <div className={styles.controlesGroup} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         <label className={styles.labelStyle}>
@@ -36,21 +38,38 @@ export function ConfigScreen({
             value={dificultad}
             onChange={(event) => onDificultadChange(event.target.value as DificultadChat)}
           >
-            <option value="fácil">Cotidiano</option>
+            <option value="facil">Cotidiano</option>
             <option value="media">Absurdo</option>
-            <option value="difícil">Surrealista</option>
+            <option value="dificil">Surrealista</option>
           </select>
         </label>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '12px', width: '100%' }}>
-          <TiempoInput fase="intro" label="⏱️ Intro" onTiempoChange={onTiempoChange} value={tiemposConfig.intro} />
-          <TiempoInput fase="nudo" label="⚡ Nudo (2 Giros)" onTiempoChange={onTiempoChange} value={tiemposConfig.nudo} />
-          <TiempoInput fase="desenlace" label="🏁 Desenlace" onTiempoChange={onTiempoChange} value={tiemposConfig.desenlace} />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+            gap: '12px',
+            width: '100%',
+          }}
+        >
+          <TiempoInput fase="intro" label="Intro" onTiempoChange={onTiempoChange} value={tiemposConfig.intro} />
+          <TiempoInput fase="nudo" label="Nudo (2 Giros)" onTiempoChange={onTiempoChange} value={tiemposConfig.nudo} />
+          <TiempoInput
+            fase="desenlace"
+            label="Desenlace"
+            onTiempoChange={onTiempoChange}
+            value={tiemposConfig.desenlace}
+          />
         </div>
       </div>
 
-      <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} style={{ marginTop: '25px' }} onClick={onIniciar} disabled={loading}>
-        {loading ? 'Inicializando Libreto...' : '¡Subir el Telón! 🚀'}
+      <button
+        className={`${styles.btnTeatro} ${styles.btnComenzar}`}
+        style={{ marginTop: '25px' }}
+        onClick={onIniciar}
+        disabled={loading}
+      >
+        {loading ? 'Inicializando libreto...' : 'Subir el Telon'}
       </button>
 
       <Link className={styles.volverMenuLink} href="/">
@@ -69,12 +88,14 @@ interface TiempoInputProps {
 
 function TiempoInput({ fase, label, onTiempoChange, value }: TiempoInputProps) {
   return (
-    <label className={styles.labelStyle}>
+    <label className={styles.labelStyle} style={{ display: 'flex', flexDirection: 'column', margin: 0 }}>
       <span>{label}</span>
       <input
         type="number"
         className={styles.inputTiempoNumber}
         value={value}
+        min={1}
+        max={600}
         onChange={(event) => onTiempoChange(fase, Number(event.target.value))}
       />
     </label>

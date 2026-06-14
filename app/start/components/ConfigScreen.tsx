@@ -30,7 +30,7 @@ export function ConfigScreen({
   return (
     <div className={styles.bloqueConfig}>
       <div className={styles.recuadroExplicativo}>
-        <div className={styles.tituloMision}>Mision de Inicios</div>
+        <div className={styles.tituloMision}>💡Mision de "Inicios"💡</div>
         Elige una estrategia, recibe un titulo y describe en voz alta como arrancarias la escena cumpliendo con la estructura y mostrando claramente la relación de los personajes, el estado anímico, el conflicto y el lugar.
       </div>
 
