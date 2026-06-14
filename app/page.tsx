@@ -36,7 +36,7 @@ export default function HomePage() {
   return (
     <main className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
-        <h1>Impro Trainer</h1>
+        <h1>Impro Trainer</h1> 
         <p className={styles.subtitulo}>Elige tu escenario de entrenamiento (v0.16)</p>
       </header>
 
