@@ -24,7 +24,7 @@ export function ConfigScreen({
   return (
     <div className={styles.bloqueConfig}>
       <div className={styles.recuadroExplicativo}>
-        <div className={styles.tituloMision}>💡Misión de "Estructuras"💡</div>
+        <div className={styles.tituloMision}>Mision de Estructuras</div>
         {explicacionInicial}
       </div>
 
@@ -37,9 +37,9 @@ export function ConfigScreen({
             value={dificultad}
             onChange={(event) => onDificultadChange(event.target.value as DificultadImpro)}
           >
-            <option value="facil">Fácil (Cotidiano)</option>
+            <option value="facil">Facil (Cotidiano)</option>
             <option value="media">Medio (Interesante)</option>
-            <option value="dificil">Difícil (Locura)</option>
+            <option value="dificil">Dificil (Locura)</option>
           </select>
         </label>
 
@@ -51,45 +51,30 @@ export function ConfigScreen({
             width: '100%',
           }}
         >
-          <TiempoInput
-            fase="intro"
-            label="⏱️ Inicio"
-            onTiempoChange={onTiempoChange}
-            value={tiemposConfig.intro}
-          />
-          <TiempoInput
-            fase="giro1"
-            label="⚡ 1er Giro"
-            onTiempoChange={onTiempoChange}
-            value={tiemposConfig.giro1}
-          />
-          <TiempoInput
-            fase="giro2"
-            label="🔥 2do Giro"
-            onTiempoChange={onTiempoChange}
-            value={tiemposConfig.giro2}
-          />
+          <TiempoInput fase="intro" label="Inicio" onTiempoChange={onTiempoChange} value={tiemposConfig.intro} />
+          <TiempoInput fase="giro1" label="1er Giro" onTiempoChange={onTiempoChange} value={tiemposConfig.giro1} />
+          <TiempoInput fase="giro2" label="2do Giro" onTiempoChange={onTiempoChange} value={tiemposConfig.giro2} />
           <TiempoInput
             fase="desenlace"
-            label="🏁 Desenlace"
+            label="Desenlace"
             onTiempoChange={onTiempoChange}
             value={tiemposConfig.desenlace}
           />
         </div>
       </div>
 
-      <button
-        className={`${styles.btnTeatro} ${styles.btnComenzar}`}
-        style={{ marginTop: '25px' }}
-        onClick={onIniciar}
-        disabled={loading}
-      >
-        {loading ? 'Afinando el libreto...' : '¡Subir el Telón! 🚀'}
-      </button>
-
-      <Link className={styles.volverMenuLink} href="/">
-        Volver al menu principal
-      </Link>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '25px' }}>
+        <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={onIniciar} disabled={loading}>
+          {loading ? 'Afinando...' : 'Subir el Telon'}
+        </button>
+        <Link
+          className={`${styles.btnTeatro} ${styles.btnRepetir}`}
+          href="/"
+          style={{ textAlign: 'center', textDecoration: 'none' }}
+        >
+          Volver al menu
+        </Link>
+      </div>
     </div>
   );
 }

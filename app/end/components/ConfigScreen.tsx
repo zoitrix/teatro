@@ -91,18 +91,18 @@ export function ConfigScreen({
         </label>
       </div>
 
-      <button
-        className={`${styles.btnTeatro} ${styles.btnComenzar}`}
-        style={{ marginTop: '25px' }}
-        onClick={onIniciar}
-        disabled={loading}
-      >
-        {loading ? loadingTexto || 'Preparando escena...' : 'Empezar final'}
-      </button>
-
-      <Link className={styles.volverMenuLink} href="/">
-        Volver al menu principal
-      </Link>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '25px' }}>
+        <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={onIniciar} disabled={loading}>
+          {loading ? loadingTexto || 'Preparando...' : 'Empezar final'}
+        </button>
+        <Link
+          className={`${styles.btnTeatro} ${styles.btnRepetir}`}
+          href="/"
+          style={{ textAlign: 'center', textDecoration: 'none' }}
+        >
+          Volver al menu
+        </Link>
+      </div>
     </div>
   );
 }

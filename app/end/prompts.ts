@@ -1,5 +1,4 @@
 import type { EscenaFinal, TipoFinal } from './types';
-import { crearCriteriosIntroduccionEscenica } from '../shared/introEvaluation';
 
 export function crearPromptEscenaFinal(params: { titulo: string; tipoFinal: TipoFinal }): string {
   return `
@@ -8,6 +7,7 @@ Eres un dramaturgo y profesor de improvisacion teatral. Preparas ejercicios para
 
 [MISION]
 Genera el contexto previo de una escena para que el jugador solo tenga que improvisar el final.
+Debe leerse de un vistazo: el jugador no debe tardar mas de unos segundos en entender la situacion.
 
 [TITULO]
 ${params.titulo}
@@ -16,20 +16,30 @@ ${params.titulo}
 ${params.tipoFinal.tecnica}: ${params.tipoFinal.enfoque}
 
 [REGLAS DEL PLANTEAMIENTO]
-${crearCriteriosIntroduccionEscenica(params.titulo)}
+- Maximo 30 palabras.
+- Una sola frase.
+- Debe incluir personajes o roles, relacion, lugar y conflicto activo de forma compacta.
+- Debe inspirarse en el titulo "${params.titulo}" sin explicarlo todo.
 
 [REGLAS DEL NUDO]
+- Maximo 30 palabras.
+- Una sola frase.
 - El nudo debe continuar el planteamiento con coherencia.
 - Debe aumentar el conflicto sin resolverlo.
 - Debe dejar preparado un final compatible con "${params.tipoFinal.tecnica}".
 - No escribas el final. Detente justo antes de que el jugador tenga que cerrarlo.
 - Evita narracion poetica, oscuridad tragica y abstraccion. Debe ser escenico, concreto y jugable.
 
+[REGLA DE BREVEDAD INQUEBRANTABLE]
+- "planteamiento" y "nudo" deben tener entre 18 y 30 palabras cada uno.
+- No uses 2 o 3 frases. No hagas sinopsis larga. No incluyas antecedentes.
+- Prefiere nombres comunes y acciones claras: "dos hermanas", "en una farmacia", "el contrato desaparece".
+
 [FORMATO DE SALIDA ESTRICTO]
 Devuelve EXCLUSIVAMENTE un objeto JSON valido:
 {
-  "planteamiento": "2 o 3 frases con personajes, relacion, lugar, emocion y conflicto activo.",
-  "nudo": "2 o 3 frases que compliquen el conflicto y dejen el cierre pendiente."
+  "planteamiento": "Una frase de 18 a 30 palabras con la plataforma escenica.",
+  "nudo": "Una frase de 18 a 30 palabras que complique el conflicto y deje el cierre pendiente."
 }`;
 }
 

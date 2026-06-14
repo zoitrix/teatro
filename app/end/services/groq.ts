@@ -37,6 +37,22 @@ function extraerObjetoJSON<T>(textoCrudo: string): Partial<T> {
   }
 }
 
+function limitarPalabras(texto: string, maxPalabras = 30): string {
+  const limpio = texto.replace(/\s+/g, ' ').trim();
+
+  if (!limpio) {
+    return '';
+  }
+
+  const palabras = limpio.split(' ');
+
+  if (palabras.length <= maxPalabras) {
+    return limpio;
+  }
+
+  return `${palabras.slice(0, maxPalabras).join(' ').replace(/[,:;]+$/g, '')}.`;
+}
+
 export async function generarTituloFinal(dificultad: DificultadEnd, titulos: string[]): Promise<string> {
   return generarTituloComun(dificultad, titulos);
 }
@@ -50,7 +66,7 @@ export async function generarEscenaParaFinal(params: {
     model: 'llama-3.1-8b-instant',
     messages: [{ role: 'user', content: crearPromptEscenaFinal(params) }],
     temperature: 0.75,
-    max_tokens: 320,
+    max_tokens: 180,
     response_format: { type: 'json_object' },
   });
 
@@ -58,12 +74,14 @@ export async function generarEscenaParaFinal(params: {
   const objetoJSON = extraerObjetoJSON<Pick<EscenaFinal, 'planteamiento' | 'nudo'>>(textoCrudo);
 
   return {
-    planteamiento:
+    planteamiento: limitarPalabras(
       objetoJSON.planteamiento ||
-      'Dos familiares se encuentran en una cocina despues de una discusion antigua. Uno intenta mantener la calma mientras el otro exige una explicacion inmediata.',
-    nudo:
+        'Dos familiares se encuentran en una cocina despues de una discusion antigua; uno exige una explicacion y el otro esconde el recibo clave.',
+    ),
+    nudo: limitarPalabras(
       objetoJSON.nudo ||
-      'La conversacion revela que ambos necesitan el mismo objeto para resolver un problema urgente, pero solo uno puede salir de la casa con el.',
+        'Ambos descubren que necesitan el mismo objeto para resolver la urgencia, pero solo uno puede salir de la casa con el.',
+    ),
   };
 }
 
