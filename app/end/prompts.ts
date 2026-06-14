@@ -15,6 +15,15 @@ ${params.titulo}
 [TIPO DE FINAL QUE SE PRACTICARA]
 ${params.tipoFinal.tecnica}: ${params.tipoFinal.enfoque}
 
+[ANCLAJE OBLIGATORIO AL TITULO]
+- Extrae la imagen central del titulo y conviertela en el motor de la escena.
+- Si el titulo contiene un lugar concreto, ese lugar debe aparecer en el planteamiento o el nudo.
+- Si el titulo contiene una pregunta, el planteamiento debe convertir esa pregunta en un problema activo.
+- Reutiliza la rareza central del titulo, no solo un lugar secundario. En "pagar por respirar en el metro", respirar y pagar deben mover la escena.
+- Reutiliza al menos dos palabras significativas del titulo cuando sea posible, sin contar articulos ni conectores.
+- No cambies a un universo generico no relacionado. Prohibido sustituir el titulo por conflictos de farmacia, contratos, alquileres o familiares si no aparecen en el titulo.
+- No inventes conflictos de contratos, deudas, herencias o alquileres salvo que el titulo los sugiera directamente.
+
 [REGLAS DEL PLANTEAMIENTO]
 - Maximo 30 palabras.
 - Una sola frase.

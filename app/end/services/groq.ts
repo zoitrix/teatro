@@ -53,6 +53,92 @@ function limitarPalabras(texto: string, maxPalabras = 30): string {
   return `${palabras.slice(0, maxPalabras).join(' ').replace(/[,:;]+$/g, '')}.`;
 }
 
+const PALABRAS_VACIAS_TITULO = new Set([
+  'a',
+  'al',
+  'como',
+  'con',
+  'de',
+  'del',
+  'el',
+  'en',
+  'es',
+  'esta',
+  'este',
+  'hay',
+  'la',
+  'las',
+  'lo',
+  'los',
+  'para',
+  'por',
+  'que',
+  'se',
+  'sin',
+  'su',
+  'sus',
+  'un',
+  'una',
+  'y',
+]);
+
+function normalizarTextoComparacion(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[¿?¡!.,;:"'()[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function raizComparacion(palabra: string): string {
+  if (palabra.length > 6 && palabra.endsWith('es')) {
+    return palabra.slice(0, -2);
+  }
+
+  if (palabra.length > 5 && palabra.endsWith('s')) {
+    return palabra.slice(0, -1);
+  }
+
+  return palabra;
+}
+
+function extraerAnclasTitulo(titulo: string): string[] {
+  return normalizarTextoComparacion(titulo)
+    .split(' ')
+    .map(raizComparacion)
+    .filter((palabra) => palabra.length > 3 && !PALABRAS_VACIAS_TITULO.has(palabra));
+}
+
+function contextoEstaAncladoAlTitulo(titulo: string, contexto: Pick<EscenaFinal, 'planteamiento' | 'nudo'>): boolean {
+  const anclas = extraerAnclasTitulo(titulo);
+
+  if (anclas.length === 0) {
+    return true;
+  }
+
+  const textoContexto = normalizarTextoComparacion(`${contexto.planteamiento} ${contexto.nudo}`);
+  const anclasPresentes = anclas.filter((ancla) => textoContexto.includes(ancla));
+  const minimoAnclas = anclas.length >= 3 ? 2 : 1;
+  const rarezaCentral = [...anclas].sort((a, b) => b.length - a.length)[0];
+
+  return anclasPresentes.length >= minimoAnclas && textoContexto.includes(rarezaCentral);
+}
+
+function crearFallbackAnclado(titulo: string): Pick<EscenaFinal, 'planteamiento' | 'nudo'> {
+  const tituloLimpio = titulo.replace(/[¿?¡!]/g, '').trim();
+
+  return {
+    planteamiento: limitarPalabras(
+      `En escena, dos trabajadores convierten "${tituloLimpio}" en una norma real que afecta directamente al publico y bloquea la situacion.`,
+    ),
+    nudo: limitarPalabras(
+      `La autoridad del lugar exige cumplir la norma de inmediato, mientras alguien descubre una forma peligrosa de esquivarla.`,
+    ),
+  };
+}
+
 export async function generarTituloFinal(dificultad: DificultadEnd, titulos: string[]): Promise<string> {
   return generarTituloComun(dificultad, titulos);
 }
@@ -62,27 +148,29 @@ export async function generarEscenaParaFinal(params: {
   tipoFinal: TipoFinal;
 }): Promise<Pick<EscenaFinal, 'planteamiento' | 'nudo'>> {
   const groq = crearClienteGroq();
-  const response = await groq.chat.completions.create({
-    model: 'llama-3.1-8b-instant',
-    messages: [{ role: 'user', content: crearPromptEscenaFinal(params) }],
-    temperature: 0.75,
-    max_tokens: 180,
-    response_format: { type: 'json_object' },
-  });
 
-  const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
-  const objetoJSON = extraerObjetoJSON<Pick<EscenaFinal, 'planteamiento' | 'nudo'>>(textoCrudo);
+  for (let intento = 0; intento < 3; intento += 1) {
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: crearPromptEscenaFinal(params) }],
+      temperature: Math.min(0.75 + intento * 0.1, 0.95),
+      max_tokens: 180,
+      response_format: { type: 'json_object' },
+    });
 
-  return {
-    planteamiento: limitarPalabras(
-      objetoJSON.planteamiento ||
-        'Dos familiares se encuentran en una cocina despues de una discusion antigua; uno exige una explicacion y el otro esconde el recibo clave.',
-    ),
-    nudo: limitarPalabras(
-      objetoJSON.nudo ||
-        'Ambos descubren que necesitan el mismo objeto para resolver la urgencia, pero solo uno puede salir de la casa con el.',
-    ),
-  };
+    const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
+    const objetoJSON = extraerObjetoJSON<Pick<EscenaFinal, 'planteamiento' | 'nudo'>>(textoCrudo);
+    const contexto = {
+      planteamiento: limitarPalabras(objetoJSON.planteamiento || ''),
+      nudo: limitarPalabras(objetoJSON.nudo || ''),
+    };
+
+    if (contexto.planteamiento && contexto.nudo && contextoEstaAncladoAlTitulo(params.titulo, contexto)) {
+      return contexto;
+    }
+  }
+
+  return crearFallbackAnclado(params.titulo);
 }
 
 export async function transcribirAudioFinal(audioBlob: Blob | null): Promise<string> {
