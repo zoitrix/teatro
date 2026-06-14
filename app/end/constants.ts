@@ -1,6 +1,6 @@
 import type { EscenaFinal, TipoFinal } from './types';
 
-export const TIEMPO_INICIAL_FINAL = 60;
+export const TIEMPO_INICIAL_FINAL = 30;
 
 export const ESCENA_FINAL_VACIA: EscenaFinal = {
   titulo: '',
