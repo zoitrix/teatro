@@ -3,11 +3,11 @@ import styles from './home.module.css';
 
 const menuItems = [
   {
-    title: 'Estructuras',
+    title: 'Arco Dramático',
     description:
       'Entrena la construccion de una historia por actos: inicio, giros y desenlace.',
     href: '/structure',
-    action: 'Practica estructuras',
+    action: 'Practica arco',
   },
   {
     title: 'Inicios',
