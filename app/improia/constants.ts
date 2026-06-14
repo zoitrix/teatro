@@ -1,9 +1,7 @@
 import type { FaseActo, InformeDirector, TiemposConfig } from './types';
 
 export const TIEMPOS_INICIALES: TiemposConfig = {
-  intro: 60,
-  nudo: 240,
-  desenlace: 60,
+  total: 240,
 };
 
 export const INFORME_INICIAL: InformeDirector = {
@@ -38,4 +36,3 @@ export const PATRONES_WHISPER_FANTASMA = [
   /^por ver$/,
   /^todos$/,
 ];
-

@@ -7,6 +7,8 @@ interface DetectorVoz {
   analyser: AnalyserNode | null;
   intervalo: NodeJS.Timeout | null;
   habloAlMenosUnaVez: boolean;
+  procesandoSilencio: boolean;
+  ultimoSonidoEn: number | null;
 }
 
 export function useVoiceTurnRecorder() {
@@ -16,6 +18,8 @@ export function useVoiceTurnRecorder() {
     analyser: null,
     intervalo: null,
     habloAlMenosUnaVez: false,
+    procesandoSilencio: false,
+    ultimoSonidoEn: null,
   });
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fragmentosAudioRef = useRef<Blob[]>([]);
@@ -37,6 +41,8 @@ export function useVoiceTurnRecorder() {
       analyser: null,
       intervalo: null,
       habloAlMenosUnaVez: false,
+      procesandoSilencio: false,
+      ultimoSonidoEn: null,
     };
   }, []);
 
@@ -61,8 +67,12 @@ export function useVoiceTurnRecorder() {
     return stream;
   }, []);
 
-  const iniciarGrabacion = useCallback(async (streamExistente?: MediaStream | null) => {
+  const iniciarGrabacion = useCallback(async (streamExistente?: MediaStream | null, onSilencio?: () => void) => {
     try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        return;
+      }
+
       fragmentosAudioRef.current = [];
       let stream = streamExistente || flujoAudioRef.current;
 
@@ -98,13 +108,30 @@ export function useVoiceTurnRecorder() {
         audioContext,
         analyser,
         habloAlMenosUnaVez: false,
+        procesandoSilencio: false,
+        ultimoSonidoEn: null,
         intervalo: setInterval(() => {
           const bufferDatos = new Uint8Array(analyser.frequencyBinCount);
           analyser.getByteFrequencyData(bufferDatos);
           const promedioVolumen = bufferDatos.reduce((a, b) => a + b, 0) / bufferDatos.length;
+          const ahora = Date.now();
 
           if (promedioVolumen > 10) {
             detectorVozRef.current.habloAlMenosUnaVez = true;
+            detectorVozRef.current.ultimoSonidoEn = ahora;
+            return;
+          }
+
+          const silencioMs = detectorVozRef.current.ultimoSonidoEn ? ahora - detectorVozRef.current.ultimoSonidoEn : 0;
+
+          if (
+            onSilencio &&
+            detectorVozRef.current.habloAlMenosUnaVez &&
+            silencioMs > 1500 &&
+            !detectorVozRef.current.procesandoSilencio
+          ) {
+            detectorVozRef.current.procesandoSilencio = true;
+            onSilencio();
           }
         }, 100),
       };
@@ -173,4 +200,3 @@ export function useVoiceTurnRecorder() {
     solicitarMicrofono,
   };
 }
-

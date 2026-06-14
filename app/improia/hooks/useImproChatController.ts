@@ -1,23 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { INFORME_INICIAL, NOMBRES_FASES, TIEMPOS_INICIALES } from '../constants';
+import { INFORME_INICIAL, TIEMPOS_INICIALES } from '../constants';
 import { evaluarActoDirector, generarReplicaCoactor, generarTituloChat, transcribirTurno } from '../services/groq';
-import type { DificultadChat, FaseActo, FeedbackFijo, InformeDirector, MensajeChat, PantallaChat, TiemposConfig } from '../types';
+import type { DificultadChat, FaseActo, InformeDirector, MensajeChat, PantallaChat, TiemposConfig } from '../types';
 import { useSpeechSynthesisActor } from './useSpeechSynthesisActor';
 import { useVoiceTurnRecorder } from './useVoiceTurnRecorder';
 
-function getSiguienteFase(fase: FaseActo): FaseActo | null {
-  if (fase === 'intro') return 'nudo';
-  if (fase === 'nudo') return 'desenlace';
-  return null;
-}
+const FASES_EVALUACION: FaseActo[] = ['intro', 'nudo', 'desenlace'];
 
 export function useImproChatController() {
   const [dificultad, setDificultad] = useState<DificultadChat>('media');
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>(TIEMPOS_INICIALES);
   const [pantalla, setPantalla] = useState<PantallaChat>('config');
-  const [faseActual, setFaseActual] = useState<FaseActo>('intro');
   const [titulo, setTitulo] = useState('');
   const [historialLetra, setHistorialLetra] = useState<MensajeChat[]>([]);
   const [titulos, setTitulos] = useState<string[]>([]);
@@ -26,34 +21,25 @@ export function useImproChatController() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [iaHablando, setIaHablando] = useState(false);
   const [informeFinal, setInformeFinal] = useState<InformeDirector>(INFORME_INICIAL);
-  const [ultimoFeedbackFijo, setUltimoFeedbackFijo] = useState<FeedbackFijo | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const textoAcumuladoActoRef = useRef<string[]>([]);
   const pantallaRef = useRef<PantallaChat>('config');
-  const faseActualRef = useRef<FaseActo>('intro');
   const historialLetraRef = useRef<MensajeChat[]>([]);
   const tituloRef = useRef('');
   const tiemposConfigRef = useRef<TiemposConfig>(TIEMPOS_INICIALES);
+  const procesandoTurnoRef = useRef(false);
+  const finalizandoRef = useRef(false);
 
   const recorder = useVoiceTurnRecorder();
 
   const vozActor = useSpeechSynthesisActor({
-    onStart: () => {
-      setIaHablando(true);
-    },
-    onEnd: () => {
-      setIaHablando(false);
-    },
+    onStart: () => setIaHablando(true),
+    onEnd: () => setIaHablando(false),
   });
 
   useEffect(() => {
     pantallaRef.current = pantalla;
   }, [pantalla]);
-
-  useEffect(() => {
-    faseActualRef.current = faseActual;
-  }, [faseActual]);
 
   useEffect(() => {
     historialLetraRef.current = historialLetra;
@@ -67,93 +53,125 @@ export function useImproChatController() {
     tiemposConfigRef.current = tiemposConfig;
   }, [tiemposConfig]);
 
-  const finalizarFuncionYMostrarInforme = useCallback(() => {
-    recorder.liberarMicrofono();
-    vozActor.cancelarVoz();
-    setPantalla('final');
-  }, [recorder, vozActor]);
+  const procesarTurnoConversacionalRef = useRef<() => Promise<void>>(async () => {});
 
-  const ejecutarEvaluacionDirectorEnBackstage = useCallback(async (fase: FaseActo, textoActor: string) => {
-    try {
-      const evaluacion = await evaluarActoDirector({
-        fase,
-        titulo: tituloRef.current,
-        historial: historialLetraRef.current,
-        textoActor,
-      });
+  const iniciarEscuchaAutomatica = useCallback((streamInicial?: MediaStream | null) => {
+    setTimeout(() => {
+      if (pantallaRef.current === 'jugando' && !procesandoTurnoRef.current && !finalizandoRef.current) {
+        recorder.iniciarGrabacion(streamInicial, () => {
+          void procesarTurnoConversacionalRef.current();
+        });
+      }
+    }, 100);
+  }, [recorder]);
 
-      setInformeFinal((prev) => ({
-        ...prev,
-        [fase]: evaluacion,
-      }));
+  const evaluarFuncionCompleta = useCallback(async (historial: MensajeChat[]) => {
+    const textoActor = historial
+      .filter((mensaje) => mensaje.role === 'user')
+      .map((mensaje) => mensaje.content)
+      .join(' ');
 
-      setUltimoFeedbackFijo({
-        fase: NOMBRES_FASES[fase],
-        texto: evaluacion.comentario,
-        aprobado: evaluacion.aprobado,
-      });
-    } catch (error) {
-      console.error('Error evaluando acto en backstage:', error);
-      const propuestaFinal = textoActor.trim() ? textoActor : '[SIN_RESPUESTA]';
+    const entradas = await Promise.all(
+      FASES_EVALUACION.map(async (fase) => {
+        try {
+          const evaluacion = await evaluarActoDirector({
+            fase,
+            titulo: tituloRef.current,
+            historial,
+            textoActor,
+          });
 
-      setInformeFinal((prev) => ({
-        ...prev,
-        [fase]: {
-          aprobado: true,
-          comentario: '¡El director asiente desde la oscuridad! El show debe continuar.',
-          transcripcionAcumulada: propuestaFinal === '[SIN_RESPUESTA]' ? 'Sin intervención de voz.' : propuestaFinal,
-        },
-      }));
-    }
+          return [fase, evaluacion] as const;
+        } catch (error) {
+          console.error(`Error evaluando ${fase}:`, error);
+          return [
+            fase,
+            {
+              aprobado: false,
+              comentario: 'El director no ha podido evaluar este criterio.',
+              transcripcionAcumulada: textoActor || 'Sin intervencion de voz.',
+            },
+          ] as const;
+        }
+      }),
+    );
+
+    const informe = Object.fromEntries(entradas);
+
+    setInformeFinal({
+      intro: informe.intro ?? null,
+      nudo: informe.nudo ?? null,
+      desenlace: informe.desenlace ?? null,
+    });
   }, []);
 
-  const avanzarFaseEstructural = useCallback(() => {
-    const faseTerminada = faseActualRef.current;
-    const textoDelActo = textoAcumuladoActoRef.current.join(' ');
-    const siguienteFase = getSiguienteFase(faseTerminada);
+  const finalizarFuncionYMostrarInforme = useCallback(async () => {
+    if (finalizandoRef.current) return;
 
-    recorder.cancelarGrabacion();
-    ejecutarEvaluacionDirectorEnBackstage(faseTerminada, textoDelActo);
-    textoAcumuladoActoRef.current = [];
+    finalizandoRef.current = true;
+    setLoading(true);
+    setLoadingTexto('El Director esta evaluando la obra completa...');
+    vozActor.cancelarVoz();
 
-    if (!siguienteFase) {
-      finalizarFuncionYMostrarInforme();
-      return;
+    let historialParaEvaluar = historialLetraRef.current;
+
+    try {
+      const audioBlob = await recorder.detenerGrabacionYObtenerAudio();
+      const ultimoTexto = await transcribirTurno(audioBlob);
+
+      if (ultimoTexto.trim()) {
+        historialParaEvaluar = [...historialParaEvaluar, { role: 'user', content: ultimoTexto.trim() }];
+        setHistorialLetra(historialParaEvaluar);
+      }
+    } catch (error) {
+      console.error('No se pudo recuperar el ultimo turno antes de evaluar:', error);
+      recorder.cancelarGrabacion();
     }
 
-    setFaseActual(siguienteFase);
-    setTimeLeft(tiemposConfigRef.current[siguienteFase]);
-    setPantalla('jugando');
-    setTimeout(() => recorder.iniciarGrabacion(), 100);
-  }, [ejecutarEvaluacionDirectorEnBackstage, finalizarFuncionYMostrarInforme, recorder]);
+    recorder.liberarMicrofono();
+
+    await evaluarFuncionCompleta(historialParaEvaluar);
+
+    setLoading(false);
+    setLoadingTexto('');
+    setIaHablando(false);
+    setPantalla('final');
+  }, [evaluarFuncionCompleta, recorder, vozActor]);
 
   useEffect(() => {
     if (pantalla === 'jugando' && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft === 0 && pantalla === 'jugando') {
-      avanzarFaseEstructural();
+    } else if (pantalla === 'jugando' && timeLeft === 0) {
+      void finalizarFuncionYMostrarInforme();
     }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [avanzarFaseEstructural, pantalla, timeLeft]);
+  }, [finalizarFuncionYMostrarInforme, pantalla, timeLeft]);
 
-  const handleTiempoChange = useCallback((fase: FaseActo, valor: number) => {
-    setTiemposConfig((prev) => ({ ...prev, [fase]: valor }));
+  const handleTiempoChange = useCallback((valor: number) => {
+    setTiemposConfig({ total: valor });
   }, []);
 
-  const procesarTurnoConversacional = useCallback(async (audioBlob: Blob | null) => {
-    if (pantallaRef.current !== 'jugando') return;
+  const procesarTurnoConversacional = useCallback(async () => {
+    if (pantallaRef.current !== 'jugando' || procesandoTurnoRef.current || finalizandoRef.current) return;
 
+    procesandoTurnoRef.current = true;
     setLoading(true);
-    setLoadingTexto('Procesando réplica...');
+    setLoadingTexto('Escuchando tu turno...');
 
     try {
+      const audioBlob = await recorder.detenerGrabacionYObtenerAudio();
       const transcripcion = await transcribirTurno(audioBlob);
-      const transcripcionUsuario = transcripcion.trim() ? transcripcion : '[SIN_RESPUESTA]';
+      const transcripcionUsuario = transcripcion.trim();
 
-      textoAcumuladoActoRef.current.push(transcripcionUsuario);
+      if (!transcripcionUsuario) {
+        setLoading(false);
+        procesandoTurnoRef.current = false;
+        iniciarEscuchaAutomatica();
+        return;
+      }
 
       const nuevoHistorial: MensajeChat[] = [
         ...historialLetraRef.current,
@@ -161,30 +179,27 @@ export function useImproChatController() {
       ];
 
       setHistorialLetra(nuevoHistorial);
+      setLoadingTexto('Tu co-actor esta respondiendo...');
 
       const respuestaIA = await generarReplicaCoactor(nuevoHistorial);
-      setHistorialLetra((prev) => [...prev, { role: 'assistant', content: respuestaIA }]);
-      setLoading(false);
+      const historialConIA: MensajeChat[] = [...nuevoHistorial, { role: 'assistant', content: respuestaIA }];
 
-      vozActor.reproducirVoz(respuestaIA, () => {
-        if (pantallaRef.current === 'jugando') {
-          recorder.iniciarGrabacion();
-        }
-      });
+      setHistorialLetra(historialConIA);
+      setLoading(false);
+      procesandoTurnoRef.current = false;
+
+      vozActor.reproducirVoz(respuestaIA, () => iniciarEscuchaAutomatica());
     } catch (error) {
       console.error(error);
       setLoading(false);
-
-      if (pantallaRef.current === 'jugando') {
-        recorder.iniciarGrabacion();
-      }
+      procesandoTurnoRef.current = false;
+      iniciarEscuchaAutomatica();
     }
-  }, [recorder, vozActor]);
+  }, [iniciarEscuchaAutomatica, recorder, vozActor]);
 
-  const detenerGrabacionYProcesar = useCallback(async () => {
-    const audioBlob = await recorder.detenerGrabacionYObtenerAudio();
-    await procesarTurnoConversacional(audioBlob);
-  }, [procesarTurnoConversacional, recorder]);
+  useEffect(() => {
+    procesarTurnoConversacionalRef.current = procesarTurnoConversacional;
+  }, [procesarTurnoConversacional]);
 
   const iniciarEjercicio = useCallback(async () => {
     let streamInicial: MediaStream | null = null;
@@ -192,33 +207,32 @@ export function useImproChatController() {
     try {
       streamInicial = await recorder.solicitarMicrofono();
     } catch {
-      alert('¡El escenario requiere permisos de micrófono!');
+      alert('El escenario requiere permisos de microfono.');
       return;
     }
 
     setLoading(true);
-    setLoadingTexto('El público está buscando ideas locas...');
+    setLoadingTexto('El publico esta buscando una propuesta...');
     setHistorialLetra([]);
-    setFaseActual('intro');
-    textoAcumuladoActoRef.current = [];
-    setUltimoFeedbackFijo(null);
     setInformeFinal(INFORME_INICIAL);
+    finalizandoRef.current = false;
+    procesandoTurnoRef.current = false;
 
     try {
       const nuevoTitulo = await generarTituloChat(dificultad, titulos);
       setTitulo(nuevoTitulo);
       setTitulos((prev) => [...prev, nuevoTitulo]);
-      setTimeLeft(tiemposConfigRef.current.intro);
+      setTimeLeft(tiemposConfigRef.current.total);
       setPantalla('jugando');
       setLoading(false);
-      setTimeout(() => recorder.iniciarGrabacion(streamInicial), 100);
+      iniciarEscuchaAutomatica(streamInicial);
     } catch (error) {
       console.error(error);
       recorder.liberarMicrofono();
       setPantalla('config');
       setLoading(false);
     }
-  }, [dificultad, recorder, titulos]);
+  }, [dificultad, iniciarEscuchaAutomatica, recorder, titulos]);
 
   const reiniciarTeatroCompleto = useCallback(() => {
     recorder.liberarMicrofono();
@@ -226,17 +240,15 @@ export function useImproChatController() {
     setTitulo('');
     setHistorialLetra([]);
     setPantalla('config');
-    setFaseActual('intro');
-    setUltimoFeedbackFijo(null);
     setIaHablando(false);
+    setInformeFinal(INFORME_INICIAL);
+    finalizandoRef.current = false;
+    procesandoTurnoRef.current = false;
   }, [recorder, vozActor]);
 
   return {
-    avanzarFaseEstructural,
-    detenerGrabacionYProcesar,
     dificultad,
     escuchando: recorder.escuchando,
-    faseActual,
     finalizarFuncionYMostrarInforme,
     handleTiempoChange,
     historialLetra,
@@ -251,7 +263,5 @@ export function useImproChatController() {
     tiemposConfig,
     timeLeft,
     titulo,
-    ultimoFeedbackFijo,
   };
 }
-

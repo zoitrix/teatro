@@ -12,9 +12,7 @@ export interface MensajeChat {
 }
 
 export interface TiemposConfig {
-  intro: number;
-  nudo: number;
-  desenlace: number;
+  total: number;
 }
 
 export interface EvaluacionActo {
@@ -27,10 +25,4 @@ export interface InformeDirector {
   intro: EvaluacionActo | null;
   nudo: EvaluacionActo | null;
   desenlace: EvaluacionActo | null;
-}
-
-export interface FeedbackFijo {
-  fase: string;
-  texto: string;
-  aprobado: boolean;
 }

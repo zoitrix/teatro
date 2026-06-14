@@ -27,8 +27,8 @@ export default function ImproChatModularPage() {
           <h1>🎭 ImprovIA 🎬</h1>
           <p className={styles.subtitulo}>
             {controller.pantalla === 'config'
-              ? 'Ajusta los tiempos del libreto por actos'
-              : `Acto en Curso: ${controller.faseActual.toUpperCase()}`}
+              ? 'Ajusta el tiempo total de la improvisacion'
+              : 'Conversacion continua con co-actor virtual'}
           </p>
         </header>
 
@@ -47,17 +47,13 @@ export default function ImproChatModularPage() {
           {controller.pantalla === 'jugando' && (
             <PlayingScreen
               escuchando={controller.escuchando}
-              faseActual={controller.faseActual}
               historialLetra={controller.historialLetra}
               iaHablando={controller.iaHablando}
               loading={controller.loading}
               loadingTexto={controller.loadingTexto}
               onConcluir={controller.finalizarFuncionYMostrarInforme}
-              onEnviar={controller.detenerGrabacionYProcesar}
-              tiemposConfig={controller.tiemposConfig}
               timeLeft={controller.timeLeft}
               titulo={controller.titulo}
-              ultimoFeedbackFijo={controller.ultimoFeedbackFijo}
             />
           )}
         </main>
