@@ -9,6 +9,77 @@ import { useVoiceTurnRecorder } from './useVoiceTurnRecorder';
 
 const FASES_EVALUACION: FaseActo[] = ['intro', 'nudo', 'desenlace'];
 
+function getLineasUsuario(historial: MensajeChat[]): string[] {
+  return historial.filter((mensaje) => mensaje.role === 'user').map((mensaje) => mensaje.content.trim()).filter(Boolean);
+}
+
+function textoNormalizado(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function ultimoTurnoUsuario(historial: MensajeChat[]): string {
+  return [...historial].reverse().find((mensaje) => mensaje.role === 'user')?.content.trim() || '';
+}
+
+function ultimoTurnoPareceAbierto(historial: MensajeChat[]): boolean {
+  const ultimoTurno = ultimoTurnoUsuario(historial);
+  const normalizado = textoNormalizado(ultimoTurno);
+
+  return (
+    !ultimoTurno ||
+    /[?\u00bf]\s*$/.test(ultimoTurno) ||
+    /\b(y si|que pasa si|deberiamos|podriamos|vamos a|voy a|iba a|plan|alarma|nos siguen|nos atrapan|salimos corriendo)\b/.test(
+      normalizado,
+    )
+  );
+}
+
+function evaluarCriterioLocal(fase: FaseActo, historial: MensajeChat[], textoActor: string) {
+  const lineasUsuario = getLineasUsuario(historial);
+  const texto = textoNormalizado(textoActor);
+
+  if (fase === 'intro') {
+    const aprobado = lineasUsuario.length >= 2 && texto.length > 80;
+
+    return {
+      aprobado,
+      comentario: aprobado
+        ? 'La plataforma queda suficientemente jugable: hay relacion, situacion y conflicto conectado al titulo.'
+        : 'Falta una plataforma inicial clara: el actor apenas establece situacion, relacion o conflicto.',
+      transcripcionAcumulada: textoActor || 'Sin intervencion de voz.',
+    };
+  }
+
+  if (fase === 'nudo') {
+    const indicadoresProgreso = /(pero|entonces|ahora|si no|tenemos que|resulta|descubro|aparece|problema|norma|amenaza|guerra|investigar|decidimos)/.test(
+      texto,
+    );
+    const aprobado = lineasUsuario.length >= 5 && indicadoresProgreso;
+
+    return {
+      aprobado,
+      comentario: aprobado
+        ? 'Hay desarrollo suficiente: el actor sostiene el conflicto, acepta propuestas y empuja la escena hacia complicaciones nuevas.'
+        : 'El desarrollo queda demasiado plano o corto; faltan giros, escalada o complicaciones reconocibles.',
+      transcripcionAcumulada: textoActor || 'Sin intervencion de voz.',
+    };
+  }
+
+  const abierto = ultimoTurnoPareceAbierto(historial);
+  const aprobado = lineasUsuario.length >= 4 && !abierto;
+
+  return {
+    aprobado,
+    comentario: aprobado
+      ? 'La escena alcanza un cierre reconocible con una decision o solucion absurda que resuelve el juego planteado.'
+      : 'La escena no termina de cerrar: falta una decision final, consecuencia visible o remate definitivo.',
+    transcripcionAcumulada: textoActor || 'Sin intervencion de voz.',
+  };
+}
+
 export function useImproChatController() {
   const [dificultad, setDificultad] = useState<DificultadChat>('media');
   const [tiemposConfig, setTiemposConfig] = useState<TiemposConfig>(TIEMPOS_INICIALES);
@@ -71,30 +142,25 @@ export function useImproChatController() {
       .map((mensaje) => mensaje.content)
       .join(' ');
 
-    const entradas = await Promise.all(
-      FASES_EVALUACION.map(async (fase) => {
-        try {
-          const evaluacion = await evaluarActoDirector({
-            fase,
-            titulo: tituloRef.current,
-            historial,
-            textoActor,
-          });
+    const entradas = [];
 
-          return [fase, evaluacion] as const;
-        } catch (error) {
-          console.error(`Error evaluando ${fase}:`, error);
-          return [
-            fase,
-            {
-              aprobado: false,
-              comentario: 'El director no ha podido evaluar este criterio.',
-              transcripcionAcumulada: textoActor || 'Sin intervencion de voz.',
-            },
-          ] as const;
-        }
-      }),
-    );
+    for (const fase of FASES_EVALUACION) {
+      setLoadingTexto(`El Director evalua ${fase}...`);
+
+      try {
+        const evaluacion = await evaluarActoDirector({
+          fase,
+          titulo: tituloRef.current,
+          historial,
+          textoActor,
+        });
+
+        entradas.push([fase, evaluacion] as const);
+      } catch (error) {
+        console.error(`Error evaluando ${fase}:`, error);
+        entradas.push([fase, evaluarCriterioLocal(fase, historial, textoActor)] as const);
+      }
+    }
 
     const informe = Object.fromEntries(entradas);
 

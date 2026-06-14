@@ -19,7 +19,7 @@ function crearClienteGroq(): OpenAI {
 }
 
 function esAlucinacionAudio(texto: string): boolean {
-  const normalizado = texto.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?¡¿]/g, '').trim();
+  const normalizado = texto.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?\u00a1\u00bf]/g, '').trim();
 
   if (normalizado.length <= 2) {
     return true;
@@ -45,11 +45,30 @@ function desenlacePareceAbierto(historial: MensajeChat[]): boolean {
     .replace(/[\u0300-\u036f]/g, '');
 
   return (
-    /[?¿]\s*$/.test(ultimoTurno) ||
+    /[?\u00bf]\s*$/.test(ultimoTurno) ||
     /\b(y si|que pasa si|deberiamos|podriamos|vamos a|voy a|iba a|plan|alarma|nos siguen|nos atrapan|salimos corriendo)\b/.test(
       normalizado,
     )
   );
+}
+
+function extraerEvaluacionDirector(textoCrudo: string): Partial<EvaluacionActo> {
+  try {
+    return JSON.parse(textoCrudo);
+  } catch {
+    const inicioJson = textoCrudo.indexOf('{');
+    const finJson = textoCrudo.lastIndexOf('}');
+
+    if (inicioJson === -1 || finJson === -1 || finJson <= inicioJson) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(textoCrudo.substring(inicioJson, finJson + 1));
+    } catch {
+      return {};
+    }
+  }
 }
 
 export async function generarTituloChat(dificultad: DificultadChat, titulos: string[]): Promise<string> {
@@ -110,16 +129,7 @@ export async function evaluarActoDirector(params: {
   });
 
   const textoCrudo = response.choices[0]?.message?.content?.trim() || '{}';
-  let resultado;
-
-  try {
-    resultado = JSON.parse(textoCrudo);
-  } catch {
-    const inicioJson = textoCrudo.indexOf('{');
-    const finJson = textoCrudo.lastIndexOf('}');
-    const jsonLimpio = textoCrudo.substring(inicioJson, finJson + 1);
-    resultado = JSON.parse(jsonLimpio);
-  }
+  const resultado = extraerEvaluacionDirector(textoCrudo);
 
   const desenlaceAbierto = params.fase === 'desenlace' && desenlacePareceAbierto(params.historial);
 
