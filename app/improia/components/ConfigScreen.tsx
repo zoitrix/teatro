@@ -60,6 +60,9 @@ export function ConfigScreen({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '25px' }}>
+        <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={onIniciar} disabled={loading}>
+          {loading ? 'Inicializando...' : 'Subir el Telon'}
+        </button>
         <Link
           className={`${styles.btnTeatro} ${styles.btnRepetir}`}
           href="/"
@@ -67,10 +70,6 @@ export function ConfigScreen({
         >
           Volver al menu
         </Link>
-
-        <button className={`${styles.btnTeatro} ${styles.btnComenzar}`} onClick={onIniciar} disabled={loading}>
-          {loading ? 'Inicializando...' : 'Subir el Telon'}
-        </button>
       </div>
     </div>
   );
