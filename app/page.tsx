@@ -17,6 +17,13 @@ const menuItems = [
     action: 'Practica inicios',
   },
   {
+    title: 'Finales',
+    description:
+      'Entrena los diferentes finales desde una escena ya planteada.',
+    href: '/end',
+    action: 'Practica finales',
+  },
+  {
     title: 'ImprovIA',
     description:
       'Comparte escena con un co-actor virtual y practica reaccion, escucha y continuidad dramatica en voz alta.',
@@ -30,7 +37,7 @@ export default function HomePage() {
     <main className={styles.teatroContainer}>
       <header className={styles.teatroHeader}>
         <h1>Impro Trainer</h1>
-        <p className={styles.subtitulo}>Elige tu escenario de entrenamiento (v0.7)</p>
+        <p className={styles.subtitulo}>Elige tu escenario de entrenamiento (v0.8)</p>
       </header>
 
       <section className={styles.escenario} aria-label="Menu principal">
