@@ -5,21 +5,25 @@ const INTENTOS_TITULO = 6;
 
 const TITULOS_FALLBACK = [
   'La impresora exige vacaciones',
-  'Mi maleta voto por mi',
+  'Prohibido llorar en el coworking',
   'El ascensor cobra entrada',
   'La sopa pidio abogado',
-  'Hacienda adopto mi fantasma',
+  'Hacienda reclama al fantasma',
   'El semaforo dirige la boda',
-  'Mi reloj renuncio ayer',
+  'Hoy no funciona la realidad',
   'La farmacia vende disculpas',
   'El taxi sabe demasiado',
   'La tarta cancelo el cumpleanos',
   'El banco perdono al cajero',
   'La nevera pide testigos',
-  'Mi zapato gano la subasta',
+  'Silencio en la sala dos',
   'El examen denuncio al profesor',
   'La alarma exige aplausos',
   'El menu eligio presidente',
+  '¿Esto entra en la garantia?',
+  'Devuelve el aplauso ahora mismo',
+  'La reunion pudo ser un audio',
+  'Nadie aviso al pianista',
 ];
 
 function crearClienteGroq(): OpenAI {
@@ -58,29 +62,32 @@ function crearGuiaDificultadTitulo(dificultad: string): string {
   if (dificultadNormalizada === 'facil') {
     return `FACIL: locura cotidiana y jugable.
 - Debe partir de una situacion reconocible: casa, familia, trabajo, compra, colegio, medico, restaurante, transporte, tramite o celebracion.
-- La rareza debe ser pequena y facil de actuar: una orden absurda, un malentendido claro, un objeto fuera de lugar.
+- La rareza debe ser pequena y facil de actuar: una orden absurda, un malentendido claro, un objeto fuera de lugar, una norma ridicula o una frase escuchada en un sitio comun.
 - Evita amenazas cosmicas, conspiraciones, leyes imposibles o tecnologia rara.
 - Salida invalida: El universo exige explicaciones.
-- Salida valida: Tu madre escondio mi maleta.`;
+- Salida invalida: Mi vecino es un vampiro.
+- Salida valida: Prohibido cantar en la farmacia.`;
   }
 
   if (dificultadNormalizada === 'media') {
     return `MEDIA: caos social con secreto incomodo.
-- Debe incluir una revelacion, sospecha, acusacion o regla absurda que complique una situacion normal.
-- La escena debe sonar a chisme de publico, no a fantasia abstracta.
+- Puede incluir una revelacion, sospecha, acusacion, pregunta inquietante, titular absurdo o regla social imposible.
+- La escena debe sonar a frase de publico real, cartel raro, noticia local, queja de barrio o comentario oido al pasar.
 - Puede haber exageracion, pero el conflicto debe entenderse al instante.
 - Salida invalida: Me despiertan a medianoche.
-- Salida valida: El cura subasta mi cumpleanos.`;
+- Salida invalida: Mi amigo es el alcalde.
+- Salida valida: El ayuntamiento multa los bostezos.`;
   }
 
   return `DIFICIL: absurdo extremo pero concreto.
-- Debe mezclar un lugar, objeto o tramite cotidiano con una consecuencia imposible.
-- La locura debe ser clara y actuable: burocracia absurda, autoridad ridicula, objeto con poder social, norma imposible, secreto desproporcionado.
+- Debe mezclar un lugar, objeto, tramite cotidiano, tendencia actual o institucion reconocible con una consecuencia imposible.
+- La locura debe ser clara y actuable: burocracia absurda, autoridad ridicula, objeto con poder social, norma imposible, tecnologia cotidiana fuera de control o ritual social exagerado.
 - Prohibido quedarse en misterio generico: medianoche, alarma, sombra, secreto, destino o sueno no bastan por si solos.
 - Prohibido inventar palabras, nombres falsos o terminos que no existan en espanol.
 - Salida invalida: Me despiertan a medianoche.
 - Salida invalida: Me despierta el leder de la alarma.
-- Salida valida: Hacienda reclama mi amigo imaginario.`;
+- Salida invalida: Mi madre es una aplicacion.
+- Salida valida: La nube exige certificado medico.`;
 }
 
 function crearPromptTitulo(dificultad: string, titulos: string[]): string {
@@ -98,12 +105,23 @@ Inventa una frase inicial o titulo unico de exactamente entre 4 y 7 palabras en 
 [REGLA CRITICA DE ORTOGRAFIA Y GRAMATICA]
 - Queda estrictamente PROHIBIDO inventar palabras o cometer errores de conjugacion. Asegurate de que todos los verbos irregulares esten perfectamente conjugados en espanol real y correcto.
 - Usa solo palabras comunes del espanol. Nada de spanglish, nombres inventados, marcas falsas ni terminos deformados.
-- La frase debe entenderse en una lectura rapida y tener sujeto, accion y situacion concreta.
+- La frase debe entenderse en una lectura rapida. Puede ser pregunta, orden, cartel, titular, queja, frase oida al pasar, situacion abierta o enunciado absurdo.
 
 [REGLAS DE ORO PARA EL TONO]
 1. PROHIBIDO EL TONO POETICO O METAFORICO: Evita frases filosoficas abstractas. Nadie grita poesia en un show de impro.
-2. FRASES DE PUBLICO REAL: Debe sonar a chisme, orden, acusacion, queja o confesion absurda.
-3. VARIEDAD SINTACTICA: Usa preguntas, imperativos, exclamaciones o pon el tiempo/lugar al principio.
+2. FRASES DE PUBLICO REAL: Debe sonar a algo que alguien gritaria desde la butaca: una noticia rara, una norma absurda, un cartel, una pregunta, una orden, una queja, un rumor o una frase interrumpida.
+3. VARIEDAD SINTACTICA OBLIGATORIA: Alterna entre preguntas, imperativos, titulares, frases nominales, carteles, lugares publicos, actualidad ligera y objetos con comportamiento social.
+4. Evita por defecto las plantillas personales tipo "mi amigo es", "mi vecino es", "mi madre es", "mi jefe es", "mi pareja es". Solo usa posesivos personales si la idea es realmente inesperada y no define el conflicto de forma obvia.
+
+[BANCO DE FORMAS NATURALES]
+- Pregunta de publico: ¿Esto entra en la garantia?
+- Orden o advertencia: No abras esa nevera
+- Cartel o norma absurda: Prohibido llorar en el coworking
+- Titular local: El ayuntamiento multa los bostezos
+- Frase oida al pasar: Eso no era parte del trato
+- Situacion abierta: Tres sillas y una disculpa
+- Actualidad cotidiana: La reunion pudo ser un audio
+- Objeto con vida social: La farmacia vende paciencia
 
 [EVITAR REPETICION]
 - Historial de titulos ya jugados: [${historialTitulos}]
@@ -127,6 +145,8 @@ Antes de responder, descarta mentalmente cualquier frase que:
 - Sea solo una situacion normal sin giro comico.
 - Contenga una palabra dudosa o inventada.
 - Use Mayusculas En Cada Palabra.
+- Empiece con una plantilla obvia de relacion personal: "Mi amigo...", "Mi vecino...", "Mi madre...", "Mi jefe...", "Mi pareja...".
+- Defina demasiado claramente los personajes y el conflicto como si fuera una sinopsis cerrada.
 - Se parezca en tema, situacion, rol, objeto, conflicto o vocabulario a cualquier titulo del historial.
 
 [FORMATO DE SALIDA CRITICO]
@@ -137,9 +157,25 @@ Devuelve UNICAMENTE las palabras de la frase final.
 - Prohibido escribir introducciones como "Aqui tienes", "Titulo:", "Frase:" o similares.
 - Prohibido explicar tu decision, describir tu pensamiento o anadir comentarios metalinguisticos.
 - Salida invalida: "La noche susurra secretos" (suena poetico y generico)
-- Salida valida: Tu madre escondio mi maleta
+- Salida invalida: Mi vecino compra mi mascota
+- Salida invalida: Mi amigo es el presidente
+- Salida valida: ¿Esto entra en la garantia?
 
 Frase final:`;
+}
+
+function tituloUsaPlantillaPersonalObvia(titulo: string): boolean {
+  const normalizado = titulo
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[¿?¡!.,;:]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return /^(mi|tu|su|nuestro|nuestra) (amigo|amiga|vecino|vecina|madre|padre|jefe|jefa|pareja|novio|novia)\b/.test(
+    normalizado,
+  );
 }
 
 function limpiarTituloGenerado(textoCrudo: string): string {
@@ -197,7 +233,7 @@ export async function generarTituloComun(dificultad: string, titulos: string[]):
 
     mejorTitulo = mejorTitulo || titulo;
 
-    if (!tituloSePareceAHistorial(titulo, titulos)) {
+    if (!tituloUsaPlantillaPersonalObvia(titulo) && !tituloSePareceAHistorial(titulo, titulos)) {
       return titulo;
     }
 
