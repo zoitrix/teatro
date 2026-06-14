@@ -7,28 +7,28 @@ const menuItems = [
     description:
       'Entrena la construccion de una historia por actos: inicio, giros y desenlace.',
     href: '/structure',
-    action: 'Practica arco',
+    action: 'Practicar arco',
   },
   {
     title: 'Inicios',
     description:
       'Practica como arrancar una escena desde un titulo usando estrategias concretas de apertura.',
     href: '/start',
-    action: 'Practica inicios',
+    action: 'Practicar inicios',
   },
   {
     title: 'Finales',
     description:
       'Entrena los diferentes finales desde una escena ya planteada.',
     href: '/end',
-    action: 'Practica finales',
+    action: 'Practicar finales',
   },
   {
     title: 'ImprovIA',
     description:
       '¡El gran reto! Comparte escena con un co-actor vIArtual y desarrolla tu propia historia.',
     href: '/improia',
-    action: 'Improvisa ahora',
+    action: 'Improvisar ahora',
   },
 ];
 
